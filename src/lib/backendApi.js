@@ -17,7 +17,13 @@ const apiRequest = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-      return { error: { message: data.error || 'An error occurred' }, data: null };
+      return {
+        error: {
+          message: data.error || 'An error occurred',
+          details: data.details,
+        },
+        data: null,
+      };
     }
 
     return { data, error: null };
@@ -160,6 +166,32 @@ export const metalPriceApi = {
   sync: async () => {
     return apiRequest('/metal-prices/sync', {
       method: 'POST',
+    });
+  },
+};
+
+export const checkoutApi = {
+  createSession: async (payload = {}) => {
+    return apiRequest('/checkout/create-session', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export const orderApi = {
+  getById: async (orderId) => {
+    if (!orderId) {
+      throw new Error('orderId is required');
+    }
+    return apiRequest(`/orders/${orderId}`, {
+      method: 'GET',
+    });
+  },
+  query: async (params = {}) => {
+    const query = buildQueryString(params);
+    return apiRequest(`/orders${query}`, {
+      method: 'GET',
     });
   },
 };

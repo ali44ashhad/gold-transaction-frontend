@@ -7,7 +7,8 @@ import SignUpPage from '@/pages/SignUpPage';
 import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import ReturnPage from '@/pages/ReturnPage';
+import CheckoutSuccessPage from '@/pages/CheckoutSuccessPage';
+import CheckoutCancelPage from '@/pages/CheckoutCancelPage';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatePresence } from 'framer-motion';
@@ -45,7 +46,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/return" element={<ReturnPage />} />
+            <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+            <Route path="/checkout/cancel" element={<CheckoutCancelPage />} />
             <Route
               path="/dashboard"
               element={<PrivateRoute><DashboardPage /></PrivateRoute>}
