@@ -196,3 +196,43 @@ export const orderApi = {
   },
 };
 
+export const cancellationRequestApi = {
+  list: async (params = {}) => {
+    const query = buildQueryString(params);
+    return apiRequest(`/cancellation-requests${query}`, {
+      method: 'GET',
+    });
+  },
+  create: async (payload) => {
+    return apiRequest('/cancellation-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getById: async (requestId) => {
+    if (!requestId) {
+      throw new Error('requestId is required');
+    }
+    return apiRequest(`/cancellation-requests/${requestId}`, {
+      method: 'GET',
+    });
+  },
+  update: async (requestId, payload) => {
+    if (!requestId) {
+      throw new Error('requestId is required');
+    }
+    return apiRequest(`/cancellation-requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  remove: async (requestId) => {
+    if (!requestId) {
+      throw new Error('requestId is required');
+    }
+    return apiRequest(`/cancellation-requests/${requestId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+

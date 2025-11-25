@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, Repeat, PiggyBank, Gem, User as UserIcon } from 'lucide-react';
+import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, Repeat, PiggyBank, Gem, User as UserIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { cancelSubscription } from '@/lib/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const GRAMS_PER_OUNCE = 31.1035;
 
@@ -27,6 +35,11 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   } = subscription;
 
   const [currentTargetPrice, setCurrentTargetPrice] = useState(0);
+  const [isSubmittingCancellation, setIsSubmittingCancellation] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelDetails, setCancelDetails] = useState('');
+  const [cancelPreferredDate, setCancelPreferredDate] = useState('');
 
   const isGold = metal === 'gold';
   const tradeUnit = isGold ? 'g' : 'oz';
@@ -63,26 +76,51 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
     });
   };
 
-  const handleCancel = async () => {
-    if (!['active', 'trialing'].includes(status)) {
-        toast({ title: 'Cannot Cancel', description: 'This plan is not active and cannot be canceled.' });
-        return;
+  const resetCancelForm = () => {
+    setCancelReason('');
+    setCancelDetails('');
+    setCancelPreferredDate('');
+  };
+
+  const canCancel = ['active', 'trialing'].includes(status);
+
+  const handleCancelClick = () => {
+    if (!canCancel) {
+      toast({
+        title: 'Cannot Cancel',
+        description: 'This plan is not active and cannot be canceled.',
+      });
+      return;
     }
-    
+    setIsCancelDialogOpen(true);
+  };
+
+  const handleSubmitCancellation = async (event) => {
+    event.preventDefault();
+
     try {
-        await cancelSubscription(id);
-        toast({
-            title: 'Cancellation Pending',
-            description: 'Your plan will be canceled at the end of the current billing period.',
-            variant: 'success',
-        });
-        onSubscriptionUpdate();
+      setIsSubmittingCancellation(true);
+      await cancelSubscription(id, {
+        reason: cancelReason || undefined,
+        details: cancelDetails || undefined,
+        preferredCancellationDate: cancelPreferredDate || undefined,
+      });
+      toast({
+        title: 'Request Submitted',
+        description: 'We received your cancellation request and will follow up soon.',
+        variant: 'success',
+      });
+      resetCancelForm();
+      setIsCancelDialogOpen(false);
+      onSubscriptionUpdate();
     } catch (error) {
-        toast({
-            title: 'Cancellation Failed',
-            description: error.message || 'There was a problem canceling your subscription.',
-            variant: 'destructive',
-        });
+      toast({
+        title: 'Cancellation Failed',
+        description: error.message || 'There was a problem submitting your cancellation request.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingCancellation(false);
     }
   };
 
@@ -117,6 +155,8 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
     tradeUnit === 'g'
       ? normalizedAccumulatedWeight.toFixed(2)
       : normalizedAccumulatedWeight.toFixed(4);
+
+  const hasCancellationRequest = subscription?.cancellationRequestId;
 
   return (
     <motion.div
@@ -176,15 +216,114 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
       )}
 
       <div className="mt-6 pt-4 border-t border-dashed border-slate-300 flex space-x-2">
-        <Button variant="outline" size="sm" className="w-full" onClick={handleNotImplemented} disabled={status !== 'active'}>
+        <Button variant="outline" size="sm" className="w-full" onClick={handleNotImplemented} disabled={status !== 'active' || hasCancellationRequest}>
             <Edit className="w-4 h-4 mr-2" />
             Modify
-        </Button>
-        <Button variant="destructive" size="sm" className="w-full" onClick={handleCancel} disabled={!['active', 'trialing'].includes(status)}>
+        </Button> 
+        {hasCancellationRequest ? (
+          <Button variant="destructive" size="sm" className="w-full" disabled>
+            <Clock className="w-4 h-4 mr-2" />
+            Cancel Pending
+          </Button>
+        ) : (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="w-full"
+            onClick={handleCancelClick}
+            disabled={isSubmittingCancellation || !canCancel}
+          >
             <Trash2 className="w-4 h-4 mr-2" />
             Cancel
-        </Button>
+          </Button>
+        )}
       </div>
+
+      <Dialog
+        open={isCancelDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isSubmittingCancellation) {
+            resetCancelForm();
+          }
+          setIsCancelDialogOpen(open);
+        }}
+      >
+        <DialogContent>
+          <form onSubmit={handleSubmitCancellation} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Submit Cancellation Request</DialogTitle>
+              <DialogDescription>
+                Tell us why you&apos;re canceling so the team can review your request.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">
+                Reason
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                placeholder="e.g. Switching plans"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">
+                Details
+              </label>
+              <textarea
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                placeholder="Share more context for our support team"
+                rows={4}
+                value={cancelDetails}
+                onChange={(e) => setCancelDetails(e.target.value)}
+                maxLength={1000}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">
+                Preferred Cancellation Date
+              </label>
+              <input
+                type="date"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                value={cancelPreferredDate}
+                onChange={(e) => setCancelPreferredDate(e.target.value)}
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!isSubmittingCancellation) {
+                    setIsCancelDialogOpen(false);
+                  }
+                }}
+                disabled={isSubmittingCancellation}
+              >
+                Close
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={isSubmittingCancellation}
+              >
+                {isSubmittingCancellation && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

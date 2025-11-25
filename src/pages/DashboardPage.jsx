@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { TrendingUp, Package, Archive as Vault, DollarSign, PlusCircle, Trash2, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { supabase } from '@/lib/customSupabaseClient';
+// import { supabase } from '@/lib/customSupabaseClient';
 import SubscriptionCard from '@/components/SubscriptionCard';
 import SubscriptionModal from '@/components/SubscriptionModal';
 import { useToast } from '@/components/ui/use-toast';
@@ -45,9 +45,9 @@ const DashboardPage = () => {
 
     try {
       // First, trigger a sync with Stripe. This will also update prices and accumulations.
-      if (user.email) {
-        await syncStripeSubscriptions(user.email);
-      }
+      // if (user.email) {
+      //   await syncStripeSubscriptions(user.email);
+      // }
 
       // Then, fetch the freshly synced data from our DB
       const transformSubscription = (sub) => ({
@@ -127,25 +127,25 @@ const DashboardPage = () => {
   }, [fetchDashboardData]);
 
   // Real-time listener for subscription updates from webhooks
-  useEffect(() => {
-    if (!user) return;
+  // useEffect(() => {
+  //   if (!user) return;
 
-    const channel = supabase.channel('subscriptions-channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          console.log('Real-time change received!', payload);
-          // Re-fetch all data to ensure consistency
-          fetchDashboardData();
-        }
-      )
-      .subscribe();
+  //   const channel = supabase.channel('subscriptions-channel')
+  //     .on(
+  //       'postgres_changes',
+  //       { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${user.id}` },
+  //       (payload) => {
+  //         console.log('Real-time change received!', payload);
+  //         // Re-fetch all data to ensure consistency
+  //         fetchDashboardData();
+  //       }
+  //     )
+  //     .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, fetchDashboardData]);
+  //   return () => {
+  //     supabase.removeChannel(channel);
+  //   };
+  // }, [user, fetchDashboardData]);
 
   const handleStartPlan = (plan) => {
     setSelectedPlan(plan);

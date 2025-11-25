@@ -1,6 +1,6 @@
 
 import { supabase } from '@/lib/customSupabaseClient';
-import { metalPriceApi, checkoutApi, orderApi } from '@/lib/backendApi';
+import { metalPriceApi, checkoutApi, orderApi, cancellationRequestApi } from '@/lib/backendApi';
 
 export const fetchMetalPrices = async () => {
   const { data, error } = await metalPriceApi.list();
@@ -47,20 +47,28 @@ export const createCheckoutSession = async (payload) => {
   return data;
 };
 
-export const cancelSubscription = async (subscriptionId) => {
-    const { data, error } = await supabase.functions.invoke('cancel-subscription', {
-        body: { subscription_id: subscriptionId },
-    });
+export const cancelSubscription = async (
+  subscriptionId,
+  { reason, details, preferredCancellationDate } = {}
+) => {
+  if (!subscriptionId) {
+    throw new Error('subscriptionId is required');
+  }
 
-    if (error) {
-        console.error('Error canceling subscription:', error);
-        throw new Error(error.message || 'Failed to cancel subscription.');
-    }
-    if (data.error) {
-        console.error('Function returned an error:', data.error);
-        throw new Error(data.error);
-    }
-    return data;
+  const payload = {
+    subscriptionId,
+    reason,
+    details,
+    preferredCancellationDate,
+  };
+
+  const { data, error } = await cancellationRequestApi.create(payload);
+  if (error) {
+    console.error('Error creating cancellation request:', error);
+    throw new Error(error.message || 'Failed to submit cancellation request.');
+  }
+
+  return data?.request;
 };
 
 export const syncStripeSubscriptions = async (email) => {
