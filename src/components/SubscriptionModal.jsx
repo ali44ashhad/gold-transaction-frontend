@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,33 +11,87 @@ import { createCheckoutSession } from '@/lib/api';
 import { persistCheckoutContext } from '@/lib/utils';
 import { Loader } from 'lucide-react';
 
-const GRAMS_PER_OUNCE = 31.1035;
+const INVESTMENT_MIN = 10;
+const INVESTMENT_MAX = 1000;
+const INVESTMENT_STEP = 1;
 
 const SubscriptionModal = ({ isOpen, onOpenChange, plan, prices, onSubscriptionUpdate }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [investmentAmount, setInvestmentAmount] = useState(50);
+  const [investmentInputValue, setInvestmentInputValue] = useState('50');
   const [targetWeight, setTargetWeight] = useState(1);
-  const [targetUnit, setTargetUnit] = useState('oz');
+  const derivedUnit = plan?.metal === 'silver' ? 'oz' : 'g';
+  const [targetUnit, setTargetUnit] = useState(derivedUnit);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
-  const metalPrice = plan?.metal === 'gold' ? prices.gold : prices.silver;
+  const metalPriceFromApi = plan?.metal === 'gold' ? Number(prices?.gold ?? 0) : Number(prices?.silver ?? 0);
+  const metalPricePerUnit = Math.max(metalPriceFromApi, 0);
 
   const resetState = useCallback(() => {
     setInvestmentAmount(50);
+    setInvestmentInputValue('50');
     setTargetWeight(1);
-    setTargetUnit('oz');
+    setTargetUnit(derivedUnit);
     setIsCreatingSession(false);
     setStatusMessage('');
-  }, []);
+  }, [derivedUnit]);
+
+  useEffect(() => {
+    setTargetUnit(derivedUnit);
+  }, [derivedUnit]);
 
   useEffect(() => {
     if (isOpen) {
       resetState();
     }
   }, [isOpen, resetState]);
+
+  const handleSliderChange = useCallback((value) => {
+    const nextValue = value[0];
+    setInvestmentAmount(nextValue);
+    setInvestmentInputValue(String(nextValue));
+  }, []);
+
+  const handleInvestmentInputChange = useCallback((event) => {
+    const { value } = event.target;
+    setInvestmentInputValue(value);
+
+    if (value === '') {
+      return;
+    }
+
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) {
+      return;
+    }
+
+    if (numericValue < INVESTMENT_MIN || numericValue > INVESTMENT_MAX) {
+      return;
+    }
+
+    setInvestmentAmount(numericValue);
+  }, []);
+
+  const handleInvestmentInputBlur = useCallback(() => {
+    if (investmentInputValue === '') {
+      setInvestmentAmount(INVESTMENT_MIN);
+      setInvestmentInputValue(String(INVESTMENT_MIN));
+      return;
+    }
+
+    const numericValue = Number(investmentInputValue);
+    if (Number.isNaN(numericValue)) {
+      setInvestmentInputValue(String(investmentAmount));
+      return;
+    }
+
+    const clampedValue = Math.min(Math.max(numericValue, INVESTMENT_MIN), INVESTMENT_MAX);
+    setInvestmentAmount(clampedValue);
+    setInvestmentInputValue(String(clampedValue));
+  }, [investmentAmount, investmentInputValue]);
 
   const handleCreateSession = useCallback(async () => {
     if (!user) {
@@ -49,12 +102,7 @@ const SubscriptionModal = ({ isOpen, onOpenChange, plan, prices, onSubscriptionU
     setIsCreatingSession(true);
     setStatusMessage('');
     try {
-      const pricePerUnit =
-        targetUnit === 'oz'
-          ? metalPrice
-          : metalPrice > 0
-          ? metalPrice / GRAMS_PER_OUNCE
-          : 0;
+      const pricePerUnit = metalPricePerUnit;
       const estimatedTargetPrice =
         pricePerUnit > 0 ? Number((pricePerUnit * targetWeight).toFixed(2)) : undefined;
 
@@ -109,7 +157,7 @@ const SubscriptionModal = ({ isOpen, onOpenChange, plan, prices, onSubscriptionU
     } finally {
       setIsCreatingSession(false);
     }
-  }, [user, targetWeight, targetUnit, plan, investmentAmount, toast]);
+  }, [user, targetWeight, targetUnit, plan, investmentAmount, toast, metalPricePerUnit]);
 
   const handleModalChange = (open) => {
     if (!open && onSubscriptionUpdate) {
@@ -118,8 +166,8 @@ const SubscriptionModal = ({ isOpen, onOpenChange, plan, prices, onSubscriptionU
     onOpenChange(open);
   };
 
-  const estimatedMonths = metalPrice > 0 && investmentAmount > 0
-    ? Math.ceil((metalPrice * targetWeight) / investmentAmount)
+  const estimatedMonths = metalPricePerUnit > 0 && investmentAmount > 0
+    ? Math.ceil((metalPricePerUnit * targetWeight) / investmentAmount)
     : 'N/A';
 
   return (
@@ -134,14 +182,34 @@ const SubscriptionModal = ({ isOpen, onOpenChange, plan, prices, onSubscriptionU
         <div className="grid gap-6 py-4">
           <div className="grid gap-2">
             <Label htmlFor="investment-amount">Monthly Investment: ${investmentAmount}</Label>
-            <Slider
-              id="investment-amount"
-              min={10}
-              max={1000}
-              step={5}
-              value={[investmentAmount]}
-              onValueChange={(value) => setInvestmentAmount(value[0])}
-            />
+            <p className="text-xs text-slate-500">
+              Enter an amount between ${INVESTMENT_MIN} and ${INVESTMENT_MAX}.
+            </p>
+            <div className="flex items-center gap-4">
+              <Slider
+                id="investment-amount"
+                min={INVESTMENT_MIN}
+                max={INVESTMENT_MAX}
+                step={INVESTMENT_STEP}
+                value={[investmentAmount]}
+                onValueChange={handleSliderChange}
+                className="flex-1"
+              />
+              <div className="relative w-28">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">$</span>
+                <Input
+                  type="number"
+                  min={INVESTMENT_MIN}
+                  max={INVESTMENT_MAX}
+                  step={INVESTMENT_STEP}
+                  value={investmentInputValue}
+                  onChange={handleInvestmentInputChange}
+                  onBlur={handleInvestmentInputBlur}
+                  className="pl-6"
+                  aria-label="Monthly investment amount input"
+                />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-4 items-end">
             <div className="col-span-2 grid gap-2">
@@ -156,19 +224,15 @@ const SubscriptionModal = ({ isOpen, onOpenChange, plan, prices, onSubscriptionU
             </div>
             <div className="grid gap-2">
               <Label htmlFor="target-unit">Unit</Label>
-              <Select value={targetUnit} onValueChange={setTargetUnit}>
-                <SelectTrigger id="target-unit">
-                  <SelectValue placeholder="Unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="oz">Ounces (oz)</SelectItem>
-                  <SelectItem value="g">Grams (g)</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="target-unit"
+                value={targetUnit === 'g' ? 'Grams (g)' : 'Ounces (oz)'}
+                readOnly
+              />
             </div>
           </div>
           <div className="text-sm text-slate-600 bg-slate-100 p-3 rounded-md">
-            Based on the current price of ~${metalPrice.toFixed(2)}/oz, it will take an estimated <span className="font-bold">{estimatedMonths} months</span> to reach your goal.
+            Based on the current price of ~${metalPricePerUnit.toFixed(2)}/{targetUnit}, it will take an estimated <span className="font-bold">{estimatedMonths} months</span> to reach your goal.
           </div>
         </div>
         <DialogFooter className="flex flex-col items-stretch gap-2">

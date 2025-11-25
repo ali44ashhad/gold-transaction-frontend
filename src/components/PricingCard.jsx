@@ -8,9 +8,9 @@ const PricingCard = ({ metal, color, currentPrice, minMonthly, onGetStarted }) =
   const gradientClass = isGold 
     ? 'from-amber-500 to-yellow-500' 
     : 'from-slate-400 to-slate-600';
-
-  // 1 ounce = 28.3495 grams
-  const gramPrice = (currentPrice / 28.3495).toFixed(2);
+  const normalizedPrice = Number(currentPrice ?? 0);
+  const unitPrice = normalizedPrice.toFixed(2);
+  const unitLabel = isGold ? 'g' : 'oz';
 
   const features = [
     'Automatic monthly contributions',
@@ -31,7 +31,7 @@ const PricingCard = ({ metal, color, currentPrice, minMonthly, onGetStarted }) =
     >
       <div className={`bg-gradient-to-r ${gradientClass} p-6 text-white`}>
         <h3 className="text-2xl font-bold mb-2">{metal} Investment</h3>
-        <p className="text-sm opacity-90">Current Price: ${currentPrice}/oz (${gramPrice}/gram)</p>
+        <p className="text-sm opacity-90">Current Price: ${unitPrice}/{unitLabel}</p>
       </div>
 
       <div className="p-8">

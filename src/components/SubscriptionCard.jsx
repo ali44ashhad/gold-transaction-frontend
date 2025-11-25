@@ -5,7 +5,18 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { cancelSubscription } from '@/lib/api';
 
-const GRAMS_PER_OZ = 31.1035;
+const GRAMS_PER_OUNCE = 31.1035;
+
+const convertWeight = (weight = 0, fromUnit = 'g', toUnit = 'g') => {
+  if (fromUnit === toUnit) return weight;
+  if (fromUnit === 'oz' && toUnit === 'g') {
+    return weight * GRAMS_PER_OUNCE;
+  }
+  if (fromUnit === 'g' && toUnit === 'oz') {
+    return weight / GRAMS_PER_OUNCE;
+  }
+  return weight;
+};
 
 const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPrices, isAdminView = false, userName }) => {
   const { toast } = useToast();
@@ -18,25 +29,21 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   const [currentTargetPrice, setCurrentTargetPrice] = useState(0);
 
   useEffect(() => {
-    if (!metalPrices || !metal || !target_weight || !target_unit) return;
+    if (!metalPrices || !metal) return;
 
-    const pricePerOz = metal === 'gold' ? metalPrices.gold : metalPrices.silver;
-    if (!pricePerOz) {
+    const tradeUnit = metal === 'gold' ? 'g' : 'oz';
+    const storedUnit = target_unit || tradeUnit;
+    const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
+
+    const priceFromApi = metal === 'gold' ? Number(metalPrices.gold ?? 0) : Number(metalPrices.silver ?? 0);
+    if (!priceFromApi) {
         setCurrentTargetPrice(0);
         return;
-    };
-
-    const pricePerGram = pricePerOz / GRAMS_PER_OZ;
-    let basePrice;
-    let premium;
-
-    if (target_unit === 'oz') {
-        basePrice = pricePerOz * target_weight;
-        premium = 1.15; // 15% premium for oz
-    } else { // 'g'
-        basePrice = pricePerGram * target_weight;
-        premium = 1.26; // 26% premium for g
     }
+
+    const pricePerTradeUnit = Math.max(priceFromApi, 0);
+    const premium = tradeUnit === 'g' ? 1.26 : 1.15;
+    const basePrice = pricePerTradeUnit * normalizedTargetWeight;
     setCurrentTargetPrice(basePrice * premium);
   }, [metalPrices, metal, target_weight, target_unit]);
 
@@ -95,6 +102,19 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   const totalMonthlyCharge = (monthly_investment || 0) * (quantity || 1);
   const progressPercentage = currentTargetPrice > 0 ? (accumulated_value / currentTargetPrice) * 100 : 0;
 
+  const tradeUnit = isGold ? 'g' : 'oz';
+  const storedUnit = target_unit || tradeUnit;
+  const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
+  const normalizedAccumulatedWeight = convertWeight(accumulated_weight || 0, storedUnit, tradeUnit);
+  const formattedTargetWeight =
+    tradeUnit === 'g'
+      ? normalizedTargetWeight.toFixed(2)
+      : normalizedTargetWeight.toFixed(4);
+  const formattedAccumulatedWeight =
+    tradeUnit === 'g'
+      ? normalizedAccumulatedWeight.toFixed(2)
+      : normalizedAccumulatedWeight.toFixed(4);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -123,10 +143,10 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
       </div>
 
       <div className="mt-6 space-y-4 text-sm flex-grow">
-        <InfoRow icon={Target} label="Targeted Weight" value={`${target_weight || 0}${target_unit || 'g'}`} isGold={isGold} />
+        <InfoRow icon={Target} label="Targeted Weight" value={`${formattedTargetWeight}${tradeUnit}`} isGold={isGold} />
         <InfoRow icon={Gem} label="Targeted Price" value={`$${currentTargetPrice.toFixed(2)}`} isGold={isGold} />
         <InfoRow icon={PiggyBank} label="Total Invested" value={`$${(accumulated_value || 0).toFixed(2)}`} isGold={isGold} />
-        <InfoRow icon={Shield} label="Total Accumulated" value={`${(accumulated_weight || 0).toFixed(4)}${target_unit || 'g'}`} isGold={isGold} />
+        <InfoRow icon={Shield} label="Total Accumulated" value={`${formattedAccumulatedWeight}${tradeUnit}`} isGold={isGold} />
         
         <div className="pt-2">
             <div className="w-full bg-slate-200 rounded-full h-2.5">

@@ -289,13 +289,13 @@ const DashboardPage = () => {
                 metal="Gold" 
                 price={metalPrices.gold} 
                 onStart={() => handleStartPlan({ name: 'Gold Plan', metal: 'gold' })}
-                disabled={hasActiveGold}
+                // disabled={hasActiveGold}
               />
               <NewPlanCard 
                 metal="Silver" 
                 price={metalPrices.silver} 
                 onStart={() => handleStartPlan({ name: 'Silver Plan', metal: 'silver' })}
-                disabled={hasActiveSilver}
+                // disabled={hasActiveSilver}
               />
             </div>
           </div>
@@ -330,6 +330,9 @@ const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
 
 const NewPlanCard = ({ metal, price, onStart, disabled }) => {
   const isGold = metal === 'Gold';
+  const normalizedPrice = Number(price ?? 0);
+  const displayPrice = normalizedPrice;
+  const unitLabel = isGold ? 'g' : 'oz';
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -338,7 +341,7 @@ const NewPlanCard = ({ metal, price, onStart, disabled }) => {
       className={`p-6 rounded-xl shadow-md border-2 ${isGold ? 'bg-amber-50 border-amber-200' : 'bg-slate-100 border-slate-300'} ${disabled ? 'opacity-50' : ''}`}
     >
       <h3 className={`text-2xl font-bold ${isGold ? 'text-amber-900' : 'text-slate-800'}`}>{metal} Plan</h3>
-      <p className={`font-semibold ${isGold ? 'text-amber-700' : 'text-slate-600'}`}>~${price.toFixed(2)}/oz</p>
+      <p className={`font-semibold ${isGold ? 'text-amber-700' : 'text-slate-600'}`}>~${displayPrice.toFixed(2)}/{unitLabel}</p>
       <Button 
         className="w-full mt-4" 
         onClick={onStart} 

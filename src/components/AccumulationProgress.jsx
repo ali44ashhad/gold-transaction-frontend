@@ -1,6 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+const GRAMS_PER_OUNCE = 31.1035;
+
+const convertWeight = (weight = 0, fromUnit = 'g', toUnit = 'g') => {
+  if (fromUnit === toUnit) return weight;
+  if (fromUnit === 'oz' && toUnit === 'g') return weight * GRAMS_PER_OUNCE;
+  if (fromUnit === 'g' && toUnit === 'oz') return weight / GRAMS_PER_OUNCE;
+  return weight;
+};
+
 const AccumulationProgress = ({ subscription }) => {
   const {
     metal,
@@ -14,14 +23,19 @@ const AccumulationProgress = ({ subscription }) => {
   const MOCK_SPOT_PRICE_OZ_GOLD = 2343.30;
   const MOCK_SPOT_PRICE_OZ_SILVER = 29.55;
   
-  let spotPricePerTargetUnit;
-  if (metal.toLowerCase() === 'gold') {
-    spotPricePerTargetUnit = target_unit === 'g' ? MOCK_SPOT_PRICE_OZ_GOLD / 28.3495 : MOCK_SPOT_PRICE_OZ_GOLD;
-  } else {
-    spotPricePerTargetUnit = target_unit === 'g' ? MOCK_SPOT_PRICE_OZ_SILVER / 28.3495 : MOCK_SPOT_PRICE_OZ_SILVER;
-  }
+  const metalType = (metal || 'gold').toLowerCase();
+  const tradeUnit = metalType === 'gold' ? 'g' : 'oz';
+  const normalizedTargetWeight = convertWeight(target_weight || 0, target_unit || tradeUnit, tradeUnit);
+  const weightLabel = tradeUnit === 'g'
+    ? normalizedTargetWeight.toFixed(2)
+    : normalizedTargetWeight.toFixed(4);
 
-  const targetValue = (target_weight || 0) * spotPricePerTargetUnit * 1.26;
+  const spotPricePerTargetUnit =
+    metalType === 'gold'
+      ? MOCK_SPOT_PRICE_OZ_GOLD / GRAMS_PER_OUNCE
+      : MOCK_SPOT_PRICE_OZ_SILVER;
+
+  const targetValue = normalizedTargetWeight * spotPricePerTargetUnit * 1.26;
   const progress = targetValue > 0 ? ((accumulated_value || 0) / targetValue) * 100 : 0;
   
   const accumulatedValue = accumulated_value || 0;
@@ -33,7 +47,7 @@ const AccumulationProgress = ({ subscription }) => {
       className="bg-white p-4 rounded-xl shadow-sm border border-slate-200"
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="font-semibold text-slate-800">{plan_name} ({target_weight}{target_unit})</span>
+        <span className="font-semibold text-slate-800">{plan_name} ({weightLabel}{tradeUnit})</span>
         <span className="text-sm font-bold text-slate-600">${accumulatedValue.toFixed(2)} / ${targetValue.toFixed(2)}</span>
       </div>
       <div className="w-full bg-slate-200 rounded-full h-2.5">

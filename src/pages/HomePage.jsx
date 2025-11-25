@@ -23,6 +23,8 @@ const HomePage = () => {
   const [metalPrices, setMetalPrices] = useState({ gold: 2650, silver: 32 });
   const [loadingPrices, setLoadingPrices] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const goldPricePerGram = Number(metalPrices.gold ?? 0);
+  const silverPricePerOz = Number(metalPrices.silver ?? 0);
 
   const getPrices = useCallback(async () => {
     try {
@@ -296,7 +298,7 @@ const HomePage = () => {
                             className="bg-gradient-to-br from-amber-50 to-yellow-100 p-8 rounded-2xl shadow-lg border-2 border-amber-200"
                         >
                             <h3 className="text-3xl font-bold text-amber-900 text-center mb-2">Gold Plan</h3>
-                            <p className="text-center text-amber-700 font-semibold mb-6">Current Price: ~${metalPrices.gold.toFixed(2)}/oz</p>
+                            <p className="text-center text-amber-700 font-semibold mb-6">Current Price: ~${goldPricePerGram.toFixed(2)}/g</p>
                             <Button className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-lg py-6" onClick={() => handleGetStarted(plans.find(p => p.metal === 'gold'))}>
                                 Start a Gold Plan
                             </Button>
@@ -309,7 +311,7 @@ const HomePage = () => {
                             className="bg-gradient-to-br from-slate-100 to-slate-200 p-8 rounded-2xl shadow-lg border-2 border-slate-300"
                         >
                             <h3 className="text-3xl font-bold text-slate-800 text-center mb-2">Silver Plan</h3>
-                            <p className="text-center text-slate-600 font-semibold mb-6">Current Price: ~${metalPrices.silver.toFixed(2)}/oz</p>
+                            <p className="text-center text-slate-600 font-semibold mb-6">Current Price: ~${silverPricePerOz.toFixed(2)}/oz</p>
                             <Button className="w-full bg-slate-600 hover:bg-slate-700 text-white text-lg py-6" onClick={() => handleGetStarted(plans.find(p => p.metal === 'silver'))}>
                                 Start a Silver Plan
                             </Button>
