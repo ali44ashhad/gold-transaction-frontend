@@ -28,26 +28,32 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
 
   const [currentTargetPrice, setCurrentTargetPrice] = useState(0);
 
+  const isGold = metal === 'gold';
+  const tradeUnit = isGold ? 'g' : 'oz';
+  const storedUnit = target_unit || tradeUnit;
+  const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
+  const normalizedAccumulatedWeight = convertWeight(accumulated_weight || 0, storedUnit, tradeUnit);
+  const pricePerTradeUnit = metal === 'gold'
+    ? Number(metalPrices?.gold ?? 0)
+    : Number(metalPrices?.silver ?? 0);
+
   useEffect(() => {
-    if (!metalPrices || !metal) return;
-
-    const tradeUnit = metal === 'gold' ? 'g' : 'oz';
-    const storedUnit = target_unit || tradeUnit;
-    const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
-
-    const priceFromApi = metal === 'gold' ? Number(metalPrices.gold ?? 0) : Number(metalPrices.silver ?? 0);
-    if (!priceFromApi) {
-        setCurrentTargetPrice(0);
-        return;
+    if (!metal || !metalPrices) {
+      setCurrentTargetPrice(0);
+      return;
     }
 
-    const pricePerTradeUnit = Math.max(priceFromApi, 0);
-    const premium = tradeUnit === 'g' ? 1.26 : 1.15;
-    const basePrice = pricePerTradeUnit * normalizedTargetWeight;
-    setCurrentTargetPrice(basePrice * premium);
-  }, [metalPrices, metal, target_weight, target_unit]);
+    const validPrice = Math.max(pricePerTradeUnit, 0);
+    if (!validPrice) {
+      setCurrentTargetPrice(0);
+      return;
+    }
 
-  const isGold = metal === 'gold';
+    const premium = tradeUnit === 'g' ? 1.26 : 1.15;
+    const basePrice = validPrice * normalizedTargetWeight;
+    setCurrentTargetPrice(basePrice * premium);
+  }, [metal, metalPrices, pricePerTradeUnit, tradeUnit, normalizedTargetWeight]);
+
   const displayPlanName = metal ? metal.charAt(0).toUpperCase() + metal.slice(1) + " Plan" : "Plan";
 
   const handleNotImplemented = () => {
@@ -102,10 +108,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   const totalMonthlyCharge = (monthly_investment || 0) * (quantity || 1);
   const progressPercentage = currentTargetPrice > 0 ? (accumulated_value / currentTargetPrice) * 100 : 0;
 
-  const tradeUnit = isGold ? 'g' : 'oz';
-  const storedUnit = target_unit || tradeUnit;
-  const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
-  const normalizedAccumulatedWeight = convertWeight(accumulated_weight || 0, storedUnit, tradeUnit);
+  const currentValue = normalizedAccumulatedWeight * Math.max(pricePerTradeUnit, 0);
   const formattedTargetWeight =
     tradeUnit === 'g'
       ? normalizedTargetWeight.toFixed(2)
@@ -144,7 +147,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
 
       <div className="mt-6 space-y-4 text-sm flex-grow">
         <InfoRow icon={Target} label="Targeted Weight" value={`${formattedTargetWeight}${tradeUnit}`} isGold={isGold} />
-        <InfoRow icon={Gem} label="Targeted Price" value={`$${currentTargetPrice.toFixed(2)}`} isGold={isGold} />
+        <InfoRow icon={Gem} label="Current Value" value={`$${currentValue.toFixed(2)}`} isGold={isGold} />
         <InfoRow icon={PiggyBank} label="Total Invested" value={`$${(accumulated_value || 0).toFixed(2)}`} isGold={isGold} />
         <InfoRow icon={Shield} label="Total Accumulated" value={`${formattedAccumulatedWeight}${tradeUnit}`} isGold={isGold} />
         
