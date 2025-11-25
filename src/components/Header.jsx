@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, LogOut, LayoutDashboard, UserCircle } from 'lucide-react';
+import { Sparkles, LogOut, LayoutDashboard, UserCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
@@ -15,7 +15,7 @@ import {
 
 const Header = () => {
   const navigate = useNavigate();
-  const { user, signOut, session } = useAuth();
+  const { user, signOut, session, role } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
@@ -70,6 +70,12 @@ const Header = () => {
                     <UserCircle className="mr-2 h-4 w-4" />
                     <span>Account Management</span>
                   </DropdownMenuItem>
+                  {role === 'admin' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin/cancellation-requests')}>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      <span>Cancellation Requests</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />

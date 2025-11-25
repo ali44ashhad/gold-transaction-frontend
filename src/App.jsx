@@ -6,6 +6,7 @@ import LoginPage from '@/pages/LoginPage';
 import SignUpPage from '@/pages/SignUpPage';
 import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
+import CancellationRequestsPage from '@/pages/CancellationRequestsPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import CheckoutSuccessPage from '@/pages/CheckoutSuccessPage';
 import CheckoutCancelPage from '@/pages/CheckoutCancelPage';
@@ -59,6 +60,10 @@ function App() {
             <Route
               path="/admin"
               element={<PrivateRoute requiredRole="admin"><AdminPage /></PrivateRoute>}
+            />
+            <Route
+              path="/admin/cancellation-requests"
+              element={<PrivateRoute requiredRole="admin"><CancellationRequestsPage /></PrivateRoute>}
             />
           </Routes>
         </AnimatePresence>
