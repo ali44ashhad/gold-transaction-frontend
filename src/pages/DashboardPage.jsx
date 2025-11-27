@@ -203,7 +203,7 @@ const DashboardPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-slate-900">
                 {isAdmin ? "Admin Dashboard" : `Welcome back, ${firstName || 'User'}!`}
@@ -215,7 +215,7 @@ const DashboardPage = () => {
             {isAdmin && pendingSubscriptionsCount > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting}>
+                  <Button variant="destructive" disabled={isDeleting} className="w-full md:w-auto">
                     {isDeleting ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
                     {isDeleting ? 'Deleting...' : `Delete ${pendingSubscriptionsCount} Pending Plans`}
                   </Button>
@@ -237,7 +237,7 @@ const DashboardPage = () => {
           </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 mb-8">
             <StatCard icon={DollarSign} label="Total Invested" value={`$${totalInvested.toFixed(2)}`} color="green" />
             <StatCard icon={TrendingUp} label="Active Plans" value={activeSubscriptionsCount} color="amber" delay={0.1} />
             <StatCard icon={Vault} label="Items in Vault" value={inVaultCount} color="blue" delay={0.2} />
@@ -258,7 +258,7 @@ const DashboardPage = () => {
               </p>
             </motion.div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {displaySubscriptions.map((subscription, index) => {
                 const subscriptionUserId =
                   subscription.user_id ||
@@ -284,7 +284,7 @@ const DashboardPage = () => {
         {!isAdmin && (
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Start a New Plan</h2>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-6 sm:grid-cols-2">
               <NewPlanCard 
                 metal="Gold" 
                 price={metalPrices.gold} 

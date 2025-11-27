@@ -563,37 +563,39 @@ const UserManagementPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8"
       >
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between mb-8">
           <div className="flex items-center space-x-3">
             <Users className="w-8 h-8 text-slate-700" />
             <h1 className="text-3xl font-bold text-slate-900">User Management</h1>
           </div>
-          <div className="flex items-center gap-3 w-full max-w-2xl">
+          <div className="flex flex-col gap-3 w-full xl:max-w-2xl xl:flex-row xl:items-center">
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Search users by name, email, or phone..."
               className="flex-1 min-w-0"
             />
-            <Button onClick={fetchUsers} variant="outline">
+            <Button onClick={fetchUsers} variant="outline" className="w-full sm:w-auto">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
-            <Button onClick={handleOpenCreateDialog}>
+            <Button onClick={handleOpenCreateDialog} className="w-full sm:w-auto">
               <UserPlus className="w-4 h-4 mr-2" />
               New User
             </Button>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-          <DataTable
-            columns={columns}
-            data={filteredUsers}
-            emptyMessage={searchQuery ? 'No users match your search.' : 'No users found.'}
-            getRowKey={(row) => normalizeId(row._id || row.id)}
-            expandedRowKeys={expandedRows}
-            renderExpandedContent={(user) => {
+        <div className="bg-white rounded-xl shadow-md border border-slate-200">
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={filteredUsers}
+              emptyMessage={searchQuery ? 'No users match your search.' : 'No users found.'}
+              getRowKey={(row) => normalizeId(row._id || row.id)}
+              expandedRowKeys={expandedRows}
+              className="min-w-[720px]"
+              renderExpandedContent={(user) => {
               const userId = normalizeId(user._id || user.id);
               const subscriptions = subscriptionsMap.get(userId) || [];
               const isLoading = loadingSubscriptions.has(userId);
@@ -740,8 +742,9 @@ const UserManagementPage = () => {
                   </div>
                 </div>
               );
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
 
         {/* Create User Dialog */}

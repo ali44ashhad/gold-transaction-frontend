@@ -215,13 +215,13 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
         </div>
       )}
 
-      <div className="mt-6 pt-4 border-t border-dashed border-slate-300 flex space-x-2">
-        <Button variant="outline" size="sm" className="w-full" onClick={handleNotImplemented} disabled={status !== 'active' || hasCancellationRequest}>
+      <div className="mt-6 pt-4 border-t border-dashed border-slate-300 flex flex-col gap-3 sm:flex-row">
+        <Button variant="outline" size="sm" className="w-full sm:flex-1" onClick={handleNotImplemented} disabled={status !== 'active' || hasCancellationRequest}>
             <Edit className="w-4 h-4 mr-2" />
             Modify
         </Button> 
         {hasCancellationRequest ? (
-          <Button variant="destructive" size="sm" className="w-full" disabled>
+          <Button variant="destructive" size="sm" className="w-full sm:flex-1" disabled>
             <Clock className="w-4 h-4 mr-2" />
             Cancel Pending
           </Button>
@@ -229,7 +229,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
           <Button
             variant="destructive"
             size="sm"
-            className="w-full"
+            className="w-full sm:flex-1"
             onClick={handleCancelClick}
             disabled={isSubmittingCancellation || !canCancel}
           >
@@ -329,12 +329,12 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
 };
 
 const InfoRow = ({ icon: Icon, label, value, isGold }) => (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center">
             <Icon className={`w-4 h-4 mr-3 ${isGold ? 'text-amber-600' : 'text-slate-500'}`} />
             <span className="text-slate-600">{label}</span>
         </div>
-        <strong className="font-bold text-slate-800">{value}</strong>
+        <strong className="font-bold text-slate-800 text-left sm:text-right">{value}</strong>
     </div>
 );
 

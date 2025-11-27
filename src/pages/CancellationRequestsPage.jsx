@@ -324,7 +324,7 @@ const CancellationRequestsPage = () => {
             <XCircle className="w-8 h-8 text-slate-700" />
             <h1 className="text-3xl font-bold text-slate-900">Cancellation Requests</h1>
           </div>
-          <div className="flex flex-1 items-center gap-3 lg:max-w-2xl">
+          <div className="flex flex-col gap-3 w-full lg:max-w-2xl lg:flex-row lg:items-center">
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
@@ -334,7 +334,7 @@ const CancellationRequestsPage = () => {
               value={statusFilter}
               onValueChange={setStatusFilter}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -346,23 +346,25 @@ const CancellationRequestsPage = () => {
                 <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={fetchRequests} variant="outline">
+            <Button onClick={fetchRequests} variant="outline" className="w-full sm:w-auto">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-          <DataTable
-            columns={columns}
-            data={filteredRequests}
-            emptyMessage={
-              searchQuery ? 'No cancellation requests match your search.' : 'No cancellation requests found.'
-            }
-            getRowKey={(row) => normalizeId(row._id)}
-            expandedRowKeys={expandedRows}
-            renderExpandedContent={(request) => (
+        <div className="bg-white rounded-xl shadow-md border border-slate-200">
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={filteredRequests}
+              emptyMessage={
+                searchQuery ? 'No cancellation requests match your search.' : 'No cancellation requests found.'
+              }
+              getRowKey={(row) => normalizeId(row._id)}
+              expandedRowKeys={expandedRows}
+              className="min-w-[720px]"
+              renderExpandedContent={(request) => (
               <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
                 <div>
                   <p className="font-semibold text-slate-800">Reason</p>
@@ -389,8 +391,9 @@ const CancellationRequestsPage = () => {
                   <p>{request.resolutionNotes || 'N/A'}</p>
                 </div>
               </div>
-            )}
-          />
+              )}
+            />
+          </div>
         </div>
 
         {/* Edit Dialog */}

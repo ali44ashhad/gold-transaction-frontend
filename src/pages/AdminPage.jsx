@@ -100,16 +100,16 @@ const AdminPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8"
       >
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div className="flex items-center space-x-3">
                 <Users className="w-8 h-8 text-slate-700"/>
                 <h1 className="text-3xl font-bold text-slate-900">Admin Panel - User Management</h1>
             </div>
-          <Button onClick={fetchUsers}>Refresh Data</Button>
+          <Button onClick={fetchUsers} className="w-full md:w-auto">Refresh Data</Button>
         </div>
         
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-            <Table>
+        <div className="bg-white rounded-xl shadow-md border border-slate-200">
+            <Table className="min-w-[640px]">
                 <TableHeader>
                     <TableRow>
                         <TableHead>Email</TableHead>

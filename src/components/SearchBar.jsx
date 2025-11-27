@@ -21,7 +21,7 @@ const SearchBar = ({
   return (
     <div
       className={cn(
-        'relative flex items-center rounded-lg border border-slate-200 bg-white pl-3 pr-2 py-2 shadow-sm',
+        'relative flex w-full items-center rounded-lg border border-slate-200 bg-white pl-3 pr-2 py-2 shadow-sm',
         className
       )}
       title={placeholder}
