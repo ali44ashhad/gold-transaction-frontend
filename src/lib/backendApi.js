@@ -114,6 +114,19 @@ export const userApi = {
       body: JSON.stringify(userData),
     });
   },
+
+  updateUser: async (userId, userData) => {
+    return apiRequest(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  deleteUser: async (userId) => {
+    return apiRequest(`/users/${userId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Subscription API functions

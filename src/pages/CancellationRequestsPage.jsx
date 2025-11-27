@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Loader, RefreshCw, Edit, XCircle, ChevronDown } from 'lucide-react';
 import DataTable from '@/components/DataTable';
 import { cn } from '@/lib/utils';
+import SearchBar from '@/components/SearchBar';
 
 const CancellationRequestsPage = () => {
   const [requests, setRequests] = useState([]);
@@ -36,6 +37,8 @@ const CancellationRequestsPage = () => {
     resolutionNotes: '',
   });
   const [updating, setUpdating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const { toast } = useToast();
 
   const fetchRequests = async () => {
@@ -185,6 +188,32 @@ const CancellationRequestsPage = () => {
     };
   };
 
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const normalizedStatusFilter = statusFilter.trim().toLowerCase();
+  const filteredRequests = requests.filter((request) => {
+    const meta = getUserMeta(request.userId);
+    const name = meta.name?.toLowerCase() || '';
+    const email = meta.secondary?.toLowerCase() || '';
+    const reason = request.reason?.toLowerCase() || '';
+    const status = request.status?.toLowerCase() || '';
+    const subscriptionId = normalizeId(request.subscriptionId).toLowerCase();
+
+    const matchesSearch = normalizedSearch
+      ? name.includes(normalizedSearch) ||
+        email.includes(normalizedSearch) ||
+        reason.includes(normalizedSearch) ||
+        status.includes(normalizedSearch) ||
+        subscriptionId.includes(normalizedSearch)
+      : true;
+
+    const matchesStatus =
+      normalizedStatusFilter === 'all'
+        ? true
+        : status === normalizedStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
   const columns = [
     {
       id: 'expander',
@@ -290,22 +319,47 @@ const CancellationRequestsPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8"
       >
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center space-x-3">
             <XCircle className="w-8 h-8 text-slate-700" />
             <h1 className="text-3xl font-bold text-slate-900">Cancellation Requests</h1>
           </div>
-          <Button onClick={fetchRequests} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex flex-1 items-center gap-3 lg:max-w-2xl">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by user,subscription ID..."
+            />
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in_review">In Review</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={fetchRequests} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
           <DataTable
             columns={columns}
-            data={requests}
-            emptyMessage="No cancellation requests found."
+            data={filteredRequests}
+            emptyMessage={
+              searchQuery ? 'No cancellation requests match your search.' : 'No cancellation requests found.'
+            }
             getRowKey={(row) => normalizeId(row._id)}
             expandedRowKeys={expandedRows}
             renderExpandedContent={(request) => (
