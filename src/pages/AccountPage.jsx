@@ -44,7 +44,7 @@ const AccountPage = () => {
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
       >
         <h1 className="text-3xl font-bold text-slate-900 mb-8">Account Management</h1>
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             {isAdmin ? <AdminUserManagement /> : <UserProfileForm />}
           </div>
@@ -189,33 +189,80 @@ const AdminUserManagement = () => {
     if (loading) return <div>Loading user list...</div>;
 
     return (
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-            <h2 className="font-bold text-xl flex items-center mb-6"><Users className="w-5 h-5 mr-2 text-amber-600"/> User Management</h2>
-             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {users.map((u) => (
-                            <tr key={u.id || u._id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{u.firstName || ''} {u.lastName || ''}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{u.email}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <Switch
-                                        checked={u.role === 'admin'}
-                                        onCheckedChange={(checked) => handleRoleChange(u.id || u._id, checked ? 'admin' : 'user')}
-                                    />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+                <div className="flex items-start gap-3">
+                    <Users className="w-6 h-6 text-amber-600 mt-0.5"/>
+                    <div>
+                        <h2 className="font-bold text-xl text-slate-900">User Management</h2>
+                        <p className="text-sm text-slate-500">Toggle admin access or refresh to sync with Supabase.</p>
+                    </div>
+                </div>
+                <Button onClick={fetchUsers} variant="outline" className="w-full sm:w-auto">
+                    Refresh
+                </Button>
             </div>
+
+            {users.length === 0 ? (
+                <div className="text-center text-slate-500 py-8 border border-dashed border-slate-200 rounded-lg">
+                    No users found.
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-4 md:hidden">
+                        {users.map((u) => {
+                            const userId = u.id || u._id;
+                            return (
+                                <div key={userId} className="rounded-lg border border-slate-200 p-4 shadow-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="font-semibold text-slate-900">
+                                                {[u.firstName, u.lastName].filter(Boolean).join(' ') || 'Unnamed User'}
+                                            </p>
+                                            <p className="text-sm text-slate-500 break-all">{u.email}</p>
+                                        </div>
+                                        <Switch
+                                            checked={u.role === 'admin'}
+                                            onCheckedChange={(checked) => handleRoleChange(userId, checked ? 'admin' : 'user')}
+                                        />
+                                    </div>
+                                    <div className="mt-3 text-xs text-slate-500">
+                                        <span className="uppercase tracking-wide">Role:</span> {u.role || 'user'}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="min-w-[600px] divide-y divide-slate-200">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-slate-200">
+                                {users.map((u) => (
+                                    <tr key={u.id || u._id}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                            {[u.firstName, u.lastName].filter(Boolean).join(' ') || 'Unnamed User'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{u.email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <Switch
+                                                checked={u.role === 'admin'}
+                                                onCheckedChange={(checked) => handleRoleChange(u.id || u._id, checked ? 'admin' : 'user')}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
