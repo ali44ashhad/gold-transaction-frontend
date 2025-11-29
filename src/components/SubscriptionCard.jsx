@@ -4,6 +4,8 @@ import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, 
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { cancelSubscription } from '@/lib/api';
+import { subscriptionApi } from '@/lib/backendApi';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,12 @@ const convertWeight = (weight = 0, fromUnit = 'g', toUnit = 'g') => {
   return weight;
 };
 
+const normalizeMonthlyAmount = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 10;
+  return Math.min(Math.max(numeric, 10), 1000);
+};
+
 const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPrices, isAdminView = false, userName }) => {
   const { toast } = useToast();
   const { 
@@ -40,6 +48,10 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   const [cancelReason, setCancelReason] = useState('');
   const [cancelDetails, setCancelDetails] = useState('');
   const [cancelPreferredDate, setCancelPreferredDate] = useState('');
+  const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
+  const [modifyAmount, setModifyAmount] = useState('');
+  const [isSubmittingModification, setIsSubmittingModification] = useState(false);
+  const [modifyError, setModifyError] = useState('');
 
   const isGold = metal === 'gold';
   const tradeUnit = isGold ? 'g' : 'oz';
@@ -68,12 +80,21 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   }, [metal, metalPrices, pricePerTradeUnit, tradeUnit, normalizedTargetWeight]);
 
   const displayPlanName = metal ? metal.charAt(0).toUpperCase() + metal.slice(1) + " Plan" : "Plan";
+  const hasCancellationRequest = subscription?.cancellationRequestId;
 
-  const handleNotImplemented = () => {
-    toast({
-      title: '🚧 Feature in progress!',
-      description: "Modifying plans will be available soon.",
-    });
+  const initializeModifyState = () => {
+    const currentAmount = Number(monthly_investment ?? subscription?.monthlyInvestment ?? 0);
+    const normalizedAmount = normalizeMonthlyAmount(currentAmount || 10);
+    setModifyAmount(normalizedAmount.toFixed(0));
+    setModifyError('');
+  };
+
+  const handleModifyClick = () => {
+    if (!canModifyPlan) {
+      return;
+    }
+    initializeModifyState();
+    setIsModifyDialogOpen(true);
   };
 
   const resetCancelForm = () => {
@@ -83,6 +104,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   };
 
   const canCancel = ['active', 'trialing'].includes(status);
+  const canModifyPlan = ['active', 'trialing'].includes(status) && !hasCancellationRequest;
 
   const handleCancelClick = () => {
     if (!canCancel) {
@@ -93,6 +115,43 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
       return;
     }
     setIsCancelDialogOpen(true);
+  };
+
+  const handleModifySubmit = async (event) => {
+    event.preventDefault();
+    const parsedAmount = Number(modifyAmount);
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 10 || parsedAmount > 1000) {
+      setModifyError('Enter an amount between $10 and $1000.');
+      return;
+    }
+
+    try {
+      setIsSubmittingModification(true);
+      const { error } = await subscriptionApi.update(id, {
+        monthlyInvestment: parsedAmount,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to update subscription.');
+      }
+
+      toast({
+        title: 'Plan Updated',
+        description: 'Your new amount will apply starting with the next billing cycle.',
+        variant: 'success',
+      });
+      setIsModifyDialogOpen(false);
+      onSubscriptionUpdate?.();
+    } catch (error) {
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Unable to modify this plan right now.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingModification(false);
+    }
   };
 
   const handleSubmitCancellation = async (event) => {
@@ -155,9 +214,6 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
     tradeUnit === 'g'
       ? normalizedAccumulatedWeight.toFixed(2)
       : normalizedAccumulatedWeight.toFixed(4);
-
-  const hasCancellationRequest = subscription?.cancellationRequestId;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -216,8 +272,18 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
       )}
 
       <div className="mt-6 pt-4 border-t border-dashed border-slate-300 flex flex-col gap-3 sm:flex-row">
-        <Button variant="outline" size="sm" className="w-full sm:flex-1" onClick={handleNotImplemented} disabled={status !== 'active' || hasCancellationRequest}>
-            <Edit className="w-4 h-4 mr-2" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full sm:flex-1"
+          onClick={handleModifyClick}
+          disabled={!canModifyPlan || isSubmittingModification}
+        >
+            {isSubmittingModification ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Edit className="w-4 h-4 mr-2" />
+            )}
             Modify
         </Button> 
         {hasCancellationRequest ? (
@@ -319,6 +385,72 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
                 Submit Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isModifyDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && isSubmittingModification) {
+            return;
+          }
+          if (open) {
+            initializeModifyState();
+          }
+          setIsModifyDialogOpen(open);
+        }}
+      >
+        <DialogContent>
+          <form onSubmit={handleModifySubmit} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Modify Monthly Investment</DialogTitle>
+              <DialogDescription>
+                Updates take effect on your next billing cycle without immediate charges.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                New Monthly Amount (USD)
+              </label>
+              <Input
+                type="number"
+                step="1"
+                min="10"
+                max="1000"
+                value={modifyAmount}
+                onChange={(event) => {
+                  setModifyAmount(event.target.value);
+                  setModifyError('');
+                }}
+                disabled={isSubmittingModification}
+                required
+              />
+              {modifyError && (
+                <p className="text-xs text-red-600">{modifyError}</p>
+              )}
+              <p className="text-xs text-slate-500">
+                Enter between $10 and $1000. The change applies to your next scheduled payment.
+              </p>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsModifyDialogOpen(false)}
+                disabled={isSubmittingModification}
+              >
+                Close
+              </Button>
+              <Button type="submit" disabled={isSubmittingModification}>
+                {isSubmittingModification && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Save Changes
               </Button>
             </DialogFooter>
           </form>
