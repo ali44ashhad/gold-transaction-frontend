@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, Repeat, PiggyBank, Gem, User as UserIcon, Loader2 } from 'lucide-react';
+import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, Repeat, PiggyBank, Gem, User as UserIcon, Loader2, ArrowDownCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { cancelSubscription } from '@/lib/api';
-import { subscriptionApi } from '@/lib/backendApi';
+import { subscriptionApi, withdrawalRequestApi } from '@/lib/backendApi';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -42,6 +42,15 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
     quantity
   } = subscription;
 
+  const isGold = metal === 'gold';
+  const tradeUnit = isGold ? 'g' : 'oz';
+  const storedUnit = target_unit || tradeUnit;
+  const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
+  const normalizedAccumulatedWeight = convertWeight(accumulated_weight || 0, storedUnit, tradeUnit);
+  const pricePerTradeUnit = metal === 'gold'
+    ? Number(metalPrices?.gold ?? 0)
+    : Number(metalPrices?.silver ?? 0);
+
   const [currentTargetPrice, setCurrentTargetPrice] = useState(0);
   const [isSubmittingCancellation, setIsSubmittingCancellation] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
@@ -52,15 +61,14 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   const [modifyAmount, setModifyAmount] = useState('');
   const [isSubmittingModification, setIsSubmittingModification] = useState(false);
   const [modifyError, setModifyError] = useState('');
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
+  const [withdrawWeight, setWithdrawWeight] = useState('');
+  const [withdrawUnit, setWithdrawUnit] = useState(tradeUnit);
+  const [withdrawNotes, setWithdrawNotes] = useState('');
+  const [isSubmittingWithdrawal, setIsSubmittingWithdrawal] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
 
-  const isGold = metal === 'gold';
-  const tradeUnit = isGold ? 'g' : 'oz';
-  const storedUnit = target_unit || tradeUnit;
-  const normalizedTargetWeight = convertWeight(target_weight || 0, storedUnit, tradeUnit);
-  const normalizedAccumulatedWeight = convertWeight(accumulated_weight || 0, storedUnit, tradeUnit);
-  const pricePerTradeUnit = metal === 'gold'
-    ? Number(metalPrices?.gold ?? 0)
-    : Number(metalPrices?.silver ?? 0);
+  
 
   useEffect(() => {
     if (!metal || !metalPrices) {
@@ -81,6 +89,27 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
 
   const displayPlanName = metal ? metal.charAt(0).toUpperCase() + metal.slice(1) + " Plan" : "Plan";
   const hasCancellationRequest = subscription?.cancellationRequestId;
+  const hasWithdrawalRequest = subscription?.withdrawalRequestId;
+
+  // Check if withdraw button should be shown
+  const canWithdraw = (() => {
+    if (hasCancellationRequest) return false;
+    if (!['active', 'trialing'].includes(status)) return false;
+    
+    if (isGold) {
+      // Gold: accumulated >= 1g OR >= target weight
+      const minGoldGrams = 1;
+      const accumulatedGrams = convertWeight(normalizedAccumulatedWeight, tradeUnit, 'g');
+      const targetGrams = convertWeight(normalizedTargetWeight, tradeUnit, 'g');
+      return accumulatedGrams >= minGoldGrams || accumulatedGrams >= targetGrams;
+    } else {
+      // Silver: accumulated >= 3.5 oz OR >= target weight
+      const minSilverOz = 3.5;
+      const accumulatedOz = convertWeight(normalizedAccumulatedWeight, tradeUnit, 'oz');
+      const targetOz = convertWeight(normalizedTargetWeight, tradeUnit, 'oz');
+      return accumulatedOz >= minSilverOz || accumulatedOz >= targetOz;
+    }
+  })();
 
   const initializeModifyState = () => {
     const currentAmount = Number(monthly_investment ?? subscription?.monthlyInvestment ?? 0);
@@ -101,6 +130,80 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
     setCancelReason('');
     setCancelDetails('');
     setCancelPreferredDate('');
+  };
+
+  const resetWithdrawForm = () => {
+    setWithdrawWeight('');
+    setWithdrawUnit(tradeUnit);
+    setWithdrawNotes('');
+    setWithdrawError('');
+  };
+
+  const handleWithdrawClick = () => {
+    if (!canWithdraw) {
+      toast({
+        title: 'Cannot Withdraw',
+        description: 'You do not meet the minimum withdrawal requirements for this subscription.',
+      });
+      return;
+    }
+    // Initialize with max available weight
+    const maxWeight = normalizedAccumulatedWeight;
+    setWithdrawWeight(maxWeight > 0 ? maxWeight.toFixed(4) : '');
+    setIsWithdrawDialogOpen(true);
+  };
+
+  const handleSubmitWithdrawal = async (event) => {
+    event.preventDefault();
+    const parsedWeight = Number(withdrawWeight);
+
+    if (!Number.isFinite(parsedWeight) || parsedWeight <= 0) {
+      setWithdrawError('Please enter a valid weight greater than 0.');
+      return;
+    }
+
+    // Convert to trade unit for comparison
+    const requestedWeightInTradeUnit = convertWeight(parsedWeight, withdrawUnit, tradeUnit);
+    if (requestedWeightInTradeUnit > normalizedAccumulatedWeight) {
+      setWithdrawError(`You can only withdraw up to ${formattedAccumulatedWeight}${tradeUnit}.`);
+      return;
+    }
+
+    try {
+      setIsSubmittingWithdrawal(true);
+      const pricePerUnit = pricePerTradeUnit;
+      const estimatedValue = requestedWeightInTradeUnit * pricePerUnit;
+
+      const { data, error } = await withdrawalRequestApi.create({
+        subscriptionId: id,
+        metal: metal,
+        requestedWeight: parsedWeight,
+        requestedUnit: withdrawUnit,
+        estimatedValue: estimatedValue,
+        notes: withdrawNotes || undefined,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to submit withdrawal request.');
+      }
+
+      toast({
+        title: 'Withdrawal Request Submitted',
+        description: 'We received your withdrawal request and will process it soon.',
+        variant: 'success',
+      });
+      resetWithdrawForm();
+      setIsWithdrawDialogOpen(false);
+      onSubscriptionUpdate?.();
+    } catch (error) {
+      toast({
+        title: 'Withdrawal Failed',
+        description: error.message || 'There was a problem submitting your withdrawal request.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingWithdrawal(false);
+    }
   };
 
   const canCancel = ['active', 'trialing'].includes(status);
@@ -305,6 +408,34 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
         )}
       </div>
 
+      {canWithdraw && !hasWithdrawalRequest && (
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleWithdrawClick}
+            disabled={isSubmittingWithdrawal}
+          >
+            {isSubmittingWithdrawal ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <ArrowDownCircle className="w-4 h-4 mr-2" />
+            )}
+            Withdraw
+          </Button>
+        </div>
+      )}
+
+      {hasWithdrawalRequest && (
+        <div className="mt-3">
+          <Button variant="outline" size="sm" className="w-full" disabled>
+            <Clock className="w-4 h-4 mr-2" />
+            Withdrawal Pending
+          </Button>
+        </div>
+      )}
+
       <Dialog
         open={isCancelDialogOpen}
         onOpenChange={(open) => {
@@ -451,6 +582,107 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
                 Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isWithdrawDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isSubmittingWithdrawal) {
+            resetWithdrawForm();
+          }
+          setIsWithdrawDialogOpen(open);
+        }}
+      >
+        <DialogContent>
+          <form onSubmit={handleSubmitWithdrawal} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Submit Withdrawal Request</DialogTitle>
+              <DialogDescription>
+                Request to withdraw accumulated {metal} from this subscription. Available: {formattedAccumulatedWeight}{tradeUnit}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Weight to Withdraw
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  max={normalizedAccumulatedWeight}
+                  value={withdrawWeight}
+                  onChange={(event) => {
+                    setWithdrawWeight(event.target.value);
+                    setWithdrawError('');
+                  }}
+                  disabled={isSubmittingWithdrawal}
+                  required
+                  className="flex-1"
+                />
+                <select
+                  value={withdrawUnit}
+                  onChange={(e) => {
+                    setWithdrawUnit(e.target.value);
+                    setWithdrawError('');
+                  }}
+                  disabled={isSubmittingWithdrawal}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                >
+                  <option value="g">g</option>
+                  <option value="oz">oz</option>
+                </select>
+              </div>
+              {withdrawError && (
+                <p className="text-xs text-red-600">{withdrawError}</p>
+              )}
+              <p className="text-xs text-slate-500">
+                Maximum available: {formattedAccumulatedWeight}{tradeUnit}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">
+                Notes (Optional)
+              </label>
+              <textarea
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                placeholder="Add any additional notes for the withdrawal request"
+                rows={3}
+                value={withdrawNotes}
+                onChange={(e) => setWithdrawNotes(e.target.value)}
+                maxLength={500}
+                disabled={isSubmittingWithdrawal}
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!isSubmittingWithdrawal) {
+                    setIsWithdrawDialogOpen(false);
+                  }
+                }}
+                disabled={isSubmittingWithdrawal}
+              >
+                Close
+              </Button>
+              <Button
+                type="submit"
+                variant="default"
+                disabled={isSubmittingWithdrawal}
+              >
+                {isSubmittingWithdrawal && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Submit Request
               </Button>
             </DialogFooter>
           </form>

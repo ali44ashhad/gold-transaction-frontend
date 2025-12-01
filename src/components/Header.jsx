@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, LogOut, LayoutDashboard, UserCircle, XCircle, Users } from 'lucide-react';
+import { Sparkles, LogOut, LayoutDashboard, UserCircle, XCircle, Users, ArrowDownCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
@@ -79,6 +79,10 @@ const Header = () => {
                       <DropdownMenuItem onClick={() => navigate('/admin/cancellation-requests')}>
                         <XCircle className="mr-2 h-4 w-4" />
                         <span>Cancellation Requests</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/admin/withdrawal-requests')}>
+                        <ArrowDownCircle className="mr-2 h-4 w-4" />
+                        <span>Withdrawal Requests</span>
                       </DropdownMenuItem>
                     </>
                   )}

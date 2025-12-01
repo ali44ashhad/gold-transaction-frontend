@@ -249,3 +249,43 @@ export const cancellationRequestApi = {
   },
 };
 
+export const withdrawalRequestApi = {
+  list: async (params = {}) => {
+    const query = buildQueryString(params);
+    return apiRequest(`/withdrawal-requests${query}`, {
+      method: 'GET',
+    });
+  },
+  create: async (payload) => {
+    return apiRequest('/withdrawal-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getById: async (requestId) => {
+    if (!requestId) {
+      throw new Error('requestId is required');
+    }
+    return apiRequest(`/withdrawal-requests/${requestId}`, {
+      method: 'GET',
+    });
+  },
+  update: async (requestId, payload) => {
+    if (!requestId) {
+      throw new Error('requestId is required');
+    }
+    return apiRequest(`/withdrawal-requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  remove: async (requestId) => {
+    if (!requestId) {
+      throw new Error('requestId is required');
+    }
+    return apiRequest(`/withdrawal-requests/${requestId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+

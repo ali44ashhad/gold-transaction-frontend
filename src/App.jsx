@@ -7,6 +7,7 @@ import SignUpPage from '@/pages/SignUpPage';
 import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
 import CancellationRequestsPage from '@/pages/CancellationRequestsPage';
+import WithdrawalRequestsPage from '@/pages/WithdrawalRequestsPage';
 import UserManagementPage from '@/pages/UserManagementPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import CheckoutSuccessPage from '@/pages/CheckoutSuccessPage';
@@ -65,6 +66,10 @@ function App() {
             <Route
               path="/admin/cancellation-requests"
               element={<PrivateRoute requiredRole="admin"><CancellationRequestsPage /></PrivateRoute>}
+            />
+            <Route
+              path="/admin/withdrawal-requests"
+              element={<PrivateRoute requiredRole="admin"><WithdrawalRequestsPage /></PrivateRoute>}
             />
             <Route
               path="/admin/users"
