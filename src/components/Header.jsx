@@ -45,7 +45,7 @@ const Header = () => {
             {session ? (
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button variant="ghost" className="relative rounded-full p-2">
                      <div className="flex items-center space-x-2">
                         <UserCircle className="w-8 h-8 text-slate-600" />
                         {firstName && <span className="hidden sm:inline text-sm font-medium">{firstName}</span>}

@@ -152,13 +152,21 @@ const CancellationRequestsPage = () => {
 
   const getStatusBadgeColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_review: 'bg-blue-100 text-blue-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      completed: 'bg-gray-100 text-gray-800',
+      rejected: 'bg-red-500 text-white',
+      pending: 'bg-yellow-500 text-white',
+      in_review: 'bg-blue-500 text-white',
+      approved: 'bg-teal-500 text-white',
+      completed: 'bg-green-500 text-white',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-500 text-white';
+  };
+
+  const formatStatusLabel = (status) => {
+    if (!status) return 'Pending';
+    return status
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const normalizeId = (value) => {
@@ -272,7 +280,7 @@ const CancellationRequestsPage = () => {
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(request.status)}`}
         >
-          {request.status || 'pending'}
+          {formatStatusLabel(request.status)}
         </span>
       ),
     },
