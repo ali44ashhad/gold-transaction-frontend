@@ -373,30 +373,32 @@ const CancellationRequestsPage = () => {
               expandedRowKeys={expandedRows}
               className="min-w-[720px]"
               renderExpandedContent={(request) => (
-              <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-                <div>
-                  <p className="font-semibold text-slate-800">Reason</p>
-                  <p>{request.reason || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Details</p>
-                  <p>{request.details || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Subscription</p>
-                  <p>
-                    {request.subscriptionId
-                      ? truncateId(normalizeId(request.subscriptionId), 16)
-                      : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Created At</p>
-                  <p>{formatDate(request.createdAt)}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <p className="font-semibold text-slate-800">Resolution Notes</p>
-                  <p>{request.resolutionNotes || 'N/A'}</p>
+              <div className="p-4">
+                <div className="grid gap-4 text-sm text-slate-600 md:grid-cols-2">
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Reason</p>
+                    <p className="break-words whitespace-normal">{request.reason || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Details</p>
+                    <p className="break-words whitespace-normal">{request.details || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Subscription</p>
+                    <p className="break-words whitespace-normal font-mono text-xs">
+                      {request.subscriptionId
+                        ? normalizeId(request.subscriptionId)
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Created At</p>
+                    <p className="break-words whitespace-normal">{formatDate(request.createdAt)}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="font-semibold text-slate-800 mb-1">Resolution Notes</p>
+                    <p className="break-words whitespace-normal">{request.resolutionNotes || 'N/A'}</p>
+                  </div>
                 </div>
               </div>
               )}

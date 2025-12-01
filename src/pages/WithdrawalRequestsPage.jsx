@@ -398,7 +398,7 @@ const WithdrawalRequestsPage = () => {
               value={metalFilter}
               onValueChange={setMetalFilter}
             >
-              <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectTrigger className="w-full sm:w-[170px] [&>span]:truncate [&>span]:whitespace-nowrap">
                 <SelectValue placeholder="Filter by metal" />
               </SelectTrigger>
               <SelectContent>
@@ -411,7 +411,7 @@ const WithdrawalRequestsPage = () => {
               value={statusFilter}
               onValueChange={setStatusFilter}
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[210px] [&>span]:truncate [&>span]:whitespace-nowrap">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -443,41 +443,43 @@ const WithdrawalRequestsPage = () => {
               expandedRowKeys={expandedRows}
               className="min-w-[1000px]"
               renderExpandedContent={(request) => (
-              <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-                <div>
-                  <p className="font-semibold text-slate-800">Metal</p>
-                  <p className="capitalize">{request.metal || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Requested Weight</p>
-                  <p>{request.requestedWeight ? `${request.requestedWeight.toFixed(4)} ${request.requestedUnit || ''}` : 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Estimated Value</p>
-                  <p>{formatCurrency(request.estimatedValue)}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Subscription</p>
-                  <p>
-                    {request.subscriptionId
-                      ? truncateId(normalizeId(request.subscriptionId), 16)
-                      : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Created At</p>
-                  <p>{formatDate(request.createdAt)}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-800">Processed At</p>
-                  <p>{formatDate(request.processedAt)}</p>
-                </div>
-                {request.notes && (
-                  <div className="md:col-span-2">
-                    <p className="font-semibold text-slate-800">Notes</p>
-                    <p>{request.notes}</p>
+              <div className="p-4">
+                <div className="grid gap-4 text-sm text-slate-600 md:grid-cols-2">
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Metal</p>
+                    <p className="capitalize break-words whitespace-normal">{request.metal || 'N/A'}</p>
                   </div>
-                )}
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Requested Weight</p>
+                    <p className="break-words whitespace-normal">{request.requestedWeight ? `${request.requestedWeight.toFixed(4)} ${request.requestedUnit || ''}` : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Estimated Value</p>
+                    <p className="break-words whitespace-normal">{formatCurrency(request.estimatedValue)}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Subscription</p>
+                    <p className="break-words whitespace-normal font-mono text-xs">
+                      {request.subscriptionId
+                        ? normalizeId(request.subscriptionId)
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Created At</p>
+                    <p className="break-words whitespace-normal">{formatDate(request.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 mb-1">Processed At</p>
+                    <p className="break-words whitespace-normal">{formatDate(request.processedAt)}</p>
+                  </div>
+                  {request.notes && (
+                    <div className="md:col-span-2">
+                      <p className="font-semibold text-slate-800 mb-1">Notes</p>
+                      <p className="break-words whitespace-normal">{request.notes}</p>
+                    </div>
+                  )}
+                </div>
               </div>
               )}
             />
