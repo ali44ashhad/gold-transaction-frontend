@@ -41,6 +41,7 @@ const UserManagementPage = () => {
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [subscriptionsMap, setSubscriptionsMap] = useState(new Map());
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(new Set());
+  const [collapsedSections, setCollapsedSections] = useState(new Map());
   const [editingUser, setEditingUser] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -163,6 +164,27 @@ const UserManagementPage = () => {
       }
       return next;
     });
+  };
+
+  const toggleSection = (userId, sectionType) => {
+    const normalizedId = normalizeId(userId);
+    const key = `${normalizedId}-${sectionType}`;
+    
+    setCollapsedSections((prev) => {
+      const next = new Map(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.set(key, true);
+      }
+      return next;
+    });
+  };
+
+  const isSectionCollapsed = (userId, sectionType) => {
+    const normalizedId = normalizeId(userId);
+    const key = `${normalizedId}-${sectionType}`;
+    return collapsedSections.has(key);
   };
 
   const formatDate = (dateString) => {
@@ -600,6 +622,100 @@ const UserManagementPage = () => {
               const subscriptions = subscriptionsMap.get(userId) || [];
               const isLoading = loadingSubscriptions.has(userId);
 
+              // Split subscriptions into active and cancelled
+              const activeSubscriptions = subscriptions.filter(
+                (s) => s.status === 'active' || s.status === 'trialing'
+              );
+              const cancelledSubscriptions = subscriptions.filter(
+                (s) => s.status === 'canceled' || s.status === 'canceling'
+              );
+
+              const isActiveCollapsed = isSectionCollapsed(userId, 'active');
+              const isCancelledCollapsed = isSectionCollapsed(userId, 'cancelled');
+
+              const renderSubscriptionCard = (subscription) => {
+                const metal = subscription.metal?.toLowerCase();
+                const borderClass = metal === 'gold' 
+                  ? 'border-2 border-amber-400' 
+                  : metal === 'silver'
+                  ? 'border-2 border-slate-400'
+                  : 'border border-slate-200';
+                const bgClass = metal === 'gold'
+                  ? 'bg-amber-50'
+                  : metal === 'silver'
+                  ? 'bg-slate-50'
+                  : 'bg-white';
+                
+                return (
+                  <div
+                    key={subscription._id || subscription.id}
+                    className={`${borderClass} ${bgClass} rounded-lg p-4`}
+                  >
+                    <div className="grid gap-2 text-sm md:grid-cols-2">
+                      <div>
+                        <p className="font-semibold text-slate-800">Plan</p>
+                        <p className="text-slate-600">{subscription.planName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Status</p>
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(subscription.status)}`}
+                        >
+                          {subscription.status || 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Metal</p>
+                        <p className="text-slate-600 capitalize">
+                          {subscription.metal || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Monthly Investment</p>
+                        <p className="text-slate-600">
+                          ${subscription.monthlyInvestment?.toFixed(2) || '0.00'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Target Weight</p>
+                        <p className="text-slate-600">
+                          {subscription.targetWeight || '0'} {subscription.targetUnit || 'oz'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Accumulated Weight</p>
+                        <p className="text-slate-600">
+                          {subscription.accumulatedWeight?.toFixed(4) || '0.0000'}{' '}
+                          {subscription.targetUnit || 'oz'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Accumulated Value</p>
+                        <p className="text-slate-600">
+                          ${subscription.accumulatedValue?.toFixed(2) || '0.00'}
+                        </p>
+                      </div>
+                      {subscription.currentPeriodEnd && (
+                        <div>
+                          <p className="font-semibold text-slate-800">Current Period End</p>
+                          <p className="text-slate-600">
+                            {formatDate(subscription.currentPeriodEnd)}
+                          </p>
+                        </div>
+                      )}
+                      {subscription.stripeSubscriptionId && (
+                        <div className="md:col-span-2">
+                          <p className="font-semibold text-slate-800">Stripe Subscription ID</p>
+                          <p className="text-slate-600 font-mono text-xs">
+                            {subscription.stripeSubscriptionId}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              };
+
               return (
                 <div className="py-4">
                   <div className="mb-4">
@@ -642,102 +758,71 @@ const UserManagementPage = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                      Active Subscriptions ({subscriptions.filter(s => s.status === 'active').length})
-                    </h3>
-                    {isLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader className="w-5 h-5 animate-spin text-amber-500 mr-2" />
-                        <p className="text-slate-600">Loading subscriptions...</p>
-                      </div>
-                    ) : subscriptions.length === 0 ? (
-                      <p className="text-slate-500 text-sm py-4">No subscriptions found.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {subscriptions.map((subscription) => {
-                          const metal = subscription.metal?.toLowerCase();
-                          const borderClass = metal === 'gold' 
-                            ? 'border-2 border-amber-400' 
-                            : metal === 'silver'
-                            ? 'border-2 border-slate-400'
-                            : 'border border-slate-200';
-                          const bgClass = metal === 'gold'
-                            ? 'bg-amber-50'
-                            : metal === 'silver'
-                            ? 'bg-slate-50'
-                            : 'bg-white';
-                          
-                          return (
-                          <div
-                            key={subscription._id || subscription.id}
-                            className={`${borderClass} ${bgClass} rounded-lg p-4`}
-                          >
-                            <div className="grid gap-2 text-sm md:grid-cols-2">
-                              <div>
-                                <p className="font-semibold text-slate-800">Plan</p>
-                                <p className="text-slate-600">{subscription.planName || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800">Status</p>
-                                <span
-                                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(subscription.status)}`}
-                                >
-                                  {subscription.status || 'N/A'}
-                                </span>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800">Metal</p>
-                                <p className="text-slate-600 capitalize">
-                                  {subscription.metal || 'N/A'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800">Monthly Investment</p>
-                                <p className="text-slate-600">
-                                  ${subscription.monthlyInvestment?.toFixed(2) || '0.00'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800">Target Weight</p>
-                                <p className="text-slate-600">
-                                  {subscription.targetWeight || '0'} {subscription.targetUnit || 'oz'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800">Accumulated Weight</p>
-                                <p className="text-slate-600">
-                                  {subscription.accumulatedWeight?.toFixed(4) || '0.0000'}{' '}
-                                  {subscription.targetUnit || 'oz'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-slate-800">Accumulated Value</p>
-                                <p className="text-slate-600">
-                                  ${subscription.accumulatedValue?.toFixed(2) || '0.00'}
-                                </p>
-                              </div>
-                              {subscription.currentPeriodEnd && (
-                                <div>
-                                  <p className="font-semibold text-slate-800">Current Period End</p>
-                                  <p className="text-slate-600">
-                                    {formatDate(subscription.currentPeriodEnd)}
-                                  </p>
-                                </div>
-                              )}
-                              {subscription.stripeSubscriptionId && (
-                                <div className="md:col-span-2">
-                                  <p className="font-semibold text-slate-800">Stripe Subscription ID</p>
-                                  <p className="text-slate-600 font-mono text-xs">
-                                    {subscription.stripeSubscriptionId}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
+                  {/* Active Subscriptions Section */}
+                  <div className="mb-4">
+                    <div 
+                      className="flex items-center gap-2 cursor-pointer mb-2"
+                      onClick={() => toggleSection(userId, 'active')}
+                    >
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 transition-transform duration-200',
+                          !isActiveCollapsed && 'rotate-180'
+                        )}
+                      />
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        Active Subscriptions ({activeSubscriptions.length})
+                      </h3>
+                    </div>
+                    {!isActiveCollapsed && (
+                      <>
+                        {isLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader className="w-5 h-5 animate-spin text-amber-500 mr-2" />
+                            <p className="text-slate-600">Loading subscriptions...</p>
                           </div>
-                          );
-                        })}
-                      </div>
+                        ) : activeSubscriptions.length === 0 ? (
+                          <p className="text-slate-500 text-sm py-4">No active subscriptions found.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {activeSubscriptions.map(renderSubscriptionCard)}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Cancelled Subscriptions Section */}
+                  <div>
+                    <div 
+                      className="flex items-center gap-2 cursor-pointer mb-2"
+                      onClick={() => toggleSection(userId, 'cancelled')}
+                    >
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 transition-transform duration-200',
+                          !isCancelledCollapsed && 'rotate-180'
+                        )}
+                      />
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        Cancelled Subscriptions ({cancelledSubscriptions.length})
+                      </h3>
+                    </div>
+                    {!isCancelledCollapsed && (
+                      <>
+                        {isLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader className="w-5 h-5 animate-spin text-amber-500 mr-2" />
+                            <p className="text-slate-600">Loading subscriptions...</p>
+                          </div>
+                        ) : cancelledSubscriptions.length === 0 ? (
+                          <p className="text-slate-500 text-sm py-4">No cancelled subscriptions found.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {cancelledSubscriptions.map(renderSubscriptionCard)}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
