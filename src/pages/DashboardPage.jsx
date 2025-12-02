@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { TrendingUp, Package, Archive as Vault, DollarSign, PlusCircle, Trash2, Loader, Users, Coins, ChevronDown, RefreshCw } from 'lucide-react';
+import { TrendingUp, Package, Archive as Vault, DollarSign, PlusCircle, Trash2, Loader, Users, Coins, ChevronDown, RefreshCw, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useNavigate } from 'react-router-dom';
 // import { supabase } from '@/lib/customSupabaseClient';
 import SubscriptionCard from '@/components/SubscriptionCard';
 import SubscriptionModal from '@/components/SubscriptionModal';
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils';
 const DashboardPage = () => {
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -660,6 +662,31 @@ const DashboardPage = () => {
                                 </p>
                               </div>
                             )}
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-slate-200">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // Prefer Stripe subscription ID for filtering orders, fallback to MongoDB _id
+                                const stripeSubId = subscription.stripeSubscriptionId || subscription.stripe_subscription_id;
+                                const mongoId = subscription._id || subscription.id;
+                                const subId = stripeSubId || mongoId;
+                                if (subId) {
+                                  navigate(`/payments?subscriptionId=${subId}`);
+                                } else {
+                                  toast({
+                                    title: 'Unable to view payments',
+                                    description: 'Subscription ID not found.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                              className="w-full"
+                            >
+                              <CreditCard className="w-4 h-4 mr-2" />
+                              View Payments
+                            </Button>
                           </div>
                         </div>
                       );

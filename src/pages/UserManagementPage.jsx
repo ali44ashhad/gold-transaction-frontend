@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-import { authApi, userApi, subscriptionApi } from '@/lib/backendApi';
+import { authApi, userApi, subscriptionApi, orderApi } from '@/lib/backendApi';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader, RefreshCw, ChevronDown, Users, Edit, Trash2, UserPlus } from 'lucide-react';
+import { Loader, RefreshCw, ChevronDown, Users, Edit, Trash2, UserPlus, CreditCard, ExternalLink } from 'lucide-react';
 import DataTable from '@/components/DataTable';
 import { cn } from '@/lib/utils';
 import SearchBar from '@/components/SearchBar';
@@ -42,6 +42,9 @@ const UserManagementPage = () => {
   const [subscriptionsMap, setSubscriptionsMap] = useState(new Map());
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(new Set());
   const [collapsedSections, setCollapsedSections] = useState(new Map());
+  const [paymentsMap, setPaymentsMap] = useState(new Map()); // Map<subscriptionId, payments[]>
+  const [loadingPayments, setLoadingPayments] = useState(new Set()); // Set<subscriptionId>
+  const [expandedPayments, setExpandedPayments] = useState(new Set()); // Set<subscriptionId>
   const [editingUser, setEditingUser] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -149,6 +152,74 @@ const UserManagementPage = () => {
     }
   };
 
+  const fetchSubscriptionPayments = async (subscription) => {
+    const subscriptionId = normalizeId(subscription._id || subscription.id);
+    
+    // If already loaded, don't fetch again
+    if (paymentsMap.has(subscriptionId)) {
+      return;
+    }
+
+    setLoadingPayments((prev) => new Set(prev).add(subscriptionId));
+
+    try {
+      // Try MongoDB subscription ID first, fallback to Stripe ID
+      let queryId = subscriptionId;
+      if (!subscriptionId.match(/^[0-9a-fA-F]{24}$/)) {
+        queryId = subscription.stripeSubscriptionId || subscription.stripe_subscription_id || subscriptionId;
+      }
+
+      const response = await orderApi.getBySubscriptionId(queryId, 100);
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to fetch payments');
+      }
+
+      const payments = response.data?.data || response.data || [];
+      setPaymentsMap((prev) => {
+        const next = new Map(prev);
+        next.set(subscriptionId, payments);
+        return next;
+      });
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      toast({
+        title: 'Error fetching payments',
+        description: error.message,
+        variant: 'destructive',
+      });
+      // Set empty array on error
+      setPaymentsMap((prev) => {
+        const next = new Map(prev);
+        next.set(subscriptionId, []);
+        return next;
+      });
+    } finally {
+      setLoadingPayments((prev) => {
+        const next = new Set(prev);
+        next.delete(subscriptionId);
+        return next;
+      });
+    }
+  };
+
+  const togglePayments = (subscription) => {
+    const subscriptionId = normalizeId(subscription._id || subscription.id);
+    const isExpanded = expandedPayments.has(subscriptionId);
+
+    setExpandedPayments((prev) => {
+      const next = new Set(prev);
+      if (isExpanded) {
+        next.delete(subscriptionId);
+      } else {
+        next.add(subscriptionId);
+        // Fetch payments when expanding
+        fetchSubscriptionPayments(subscription);
+      }
+      return next;
+    });
+  };
+
   const handleRowExpand = (userId) => {
     const normalizedId = normalizeId(userId);
     const isExpanded = expandedRows.has(normalizedId);
@@ -200,6 +271,37 @@ const UserManagementPage = () => {
     } catch {
       return 'Invalid Date';
     }
+  };
+
+  const formatCurrency = (amount, currency = 'USD') => {
+    if (amount === undefined || amount === null) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(amount);
+  };
+
+  const getOrderStatusBadgeColor = (status) => {
+    const colors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      paid: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
+      refunded: 'bg-gray-100 text-gray-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getPaymentStatusBadgeColor = (status) => {
+    const colors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      requires_payment_method: 'bg-orange-100 text-orange-800',
+      requires_action: 'bg-blue-100 text-blue-800',
+      processing: 'bg-blue-100 text-blue-800',
+      succeeded: 'bg-green-100 text-green-800',
+      failed: 'bg-red-100 text-red-800',
+      refunded: 'bg-gray-100 text-gray-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   const normalizeId = (value) => {
@@ -646,6 +748,11 @@ const UserManagementPage = () => {
                   ? 'bg-slate-50'
                   : 'bg-white';
                 
+                const subscriptionId = normalizeId(subscription._id || subscription.id);
+                const payments = paymentsMap.get(subscriptionId) || [];
+                const isLoadingPayments = loadingPayments.has(subscriptionId);
+                const isPaymentsExpanded = expandedPayments.has(subscriptionId);
+                
                 return (
                   <div
                     key={subscription._id || subscription.id}
@@ -709,6 +816,89 @@ const UserManagementPage = () => {
                           <p className="text-slate-600 font-mono text-xs">
                             {subscription.stripeSubscriptionId}
                           </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Payments Section */}
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <button
+                        onClick={() => togglePayments(subscription)}
+                        className="flex items-center gap-2 w-full text-left hover:text-amber-600 transition-colors"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            'w-4 h-4 transition-transform duration-200',
+                            isPaymentsExpanded && 'rotate-180'
+                          )}
+                        />
+                        <CreditCard className="w-4 h-4" />
+                        <span className="font-semibold text-slate-800">
+                          Payments ({payments.length})
+                        </span>
+                      </button>
+                      
+                      {isPaymentsExpanded && (
+                        <div className="mt-3 space-y-2">
+                          {isLoadingPayments ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader className="w-4 h-4 animate-spin text-amber-500 mr-2" />
+                              <p className="text-slate-600 text-sm">Loading payments...</p>
+                            </div>
+                          ) : payments.length === 0 ? (
+                            <p className="text-slate-500 text-sm py-2">No payments found.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {payments.map((payment) => (
+                                <div
+                                  key={normalizeId(payment._id || payment.id)}
+                                  className="bg-white rounded-lg p-3 border border-slate-200"
+                                >
+                                  <div className="grid gap-2 text-xs md:grid-cols-3">
+                                    <div>
+                                      <p className="font-semibold text-slate-800">Amount</p>
+                                      <p className="text-slate-600">
+                                        {formatCurrency(payment.amount, payment.currency)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-slate-800">Order Status</p>
+                                      <span
+                                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusBadgeColor(payment.status)}`}
+                                      >
+                                        {payment.status || 'N/A'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-slate-800">Payment Status</p>
+                                      <span
+                                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusBadgeColor(payment.paymentStatus)}`}
+                                      >
+                                        {payment.paymentStatus || 'N/A'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-slate-800">Date</p>
+                                      <p className="text-slate-600">{formatDate(payment.createdAt)}</p>
+                                    </div>
+                                    {payment.receiptUrl && (
+                                      <div className="md:col-span-2">
+                                        <a
+                                          href={payment.receiptUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs"
+                                        >
+                                          View Receipt
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -9,6 +9,7 @@ import AdminPage from '@/pages/AdminPage';
 import CancellationRequestsPage from '@/pages/CancellationRequestsPage';
 import WithdrawalRequestsPage from '@/pages/WithdrawalRequestsPage';
 import UserManagementPage from '@/pages/UserManagementPage';
+import PaymentsPage from '@/pages/PaymentsPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import CheckoutSuccessPage from '@/pages/CheckoutSuccessPage';
 import CheckoutCancelPage from '@/pages/CheckoutCancelPage';
@@ -74,6 +75,10 @@ function App() {
             <Route
               path="/admin/users"
               element={<PrivateRoute requiredRole="admin"><UserManagementPage /></PrivateRoute>}
+            />
+            <Route
+              path="/payments"
+              element={<PrivateRoute><PaymentsPage /></PrivateRoute>}
             />
           </Routes>
         </AnimatePresence>

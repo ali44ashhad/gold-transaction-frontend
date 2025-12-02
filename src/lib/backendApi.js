@@ -207,6 +207,15 @@ export const orderApi = {
       method: 'GET',
     });
   },
+  getBySubscriptionId: async (subscriptionId, limit = 100) => {
+    if (!subscriptionId) {
+      throw new Error('subscriptionId is required');
+    }
+    const query = buildQueryString({ limit });
+    return apiRequest(`/orders/subscription/${subscriptionId}${query}`, {
+      method: 'GET',
+    });
+  },
 };
 
 export const cancellationRequestApi = {

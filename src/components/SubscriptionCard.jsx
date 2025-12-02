@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, Repeat, PiggyBank, Gem, User as UserIcon, Loader2, ArrowDownCircle } from 'lucide-react';
+import { Package, Shield, Calendar, Edit, Trash2, AlertTriangle, Clock, Target, Repeat, PiggyBank, Gem, User as UserIcon, Loader2, ArrowDownCircle, CreditCard } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { cancelSubscription } from '@/lib/api';
 import { subscriptionApi, withdrawalRequestApi } from '@/lib/backendApi';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -36,6 +37,7 @@ const normalizeMonthlyAmount = (value) => {
 
 const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPrices, isAdminView = false, userName }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { 
     id, metal, plan_name, status, target_weight, target_unit, 
     accumulated_value, current_period_end, monthly_investment, accumulated_weight,
@@ -441,6 +443,34 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
             </div>
           )}
         </>
+      )}
+
+      {/* View Payments button - always visible if subscription has Stripe ID */}
+      {(subscription.stripeSubscriptionId || subscription.stripe_subscription_id) && (
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              const stripeSubId = subscription.stripeSubscriptionId || subscription.stripe_subscription_id;
+              const mongoId = subscription._id || subscription.id;
+              const subId = stripeSubId || mongoId;
+              if (subId) {
+                navigate(`/payments?subscriptionId=${subId}`);
+              } else {
+                toast({
+                  title: 'Unable to view payments',
+                  description: 'Subscription ID not found.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+          >
+            <CreditCard className="w-4 h-4 mr-2" />
+            View Payments
+          </Button>
+        </div>
       )}
 
       <Dialog
