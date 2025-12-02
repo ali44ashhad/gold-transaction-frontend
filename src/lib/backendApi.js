@@ -289,3 +289,16 @@ export const withdrawalRequestApi = {
   },
 };
 
+export const dashboardApi = {
+  getStats: async () => {
+    return apiRequest('/dashboard/stats', {
+      method: 'GET',
+    });
+  },
+  getUserStats: async () => {
+    return apiRequest('/dashboard/user-stats', {
+      method: 'GET',
+    });
+  },
+};
+

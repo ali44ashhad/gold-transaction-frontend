@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { TrendingUp, Package, Archive as Vault, DollarSign, PlusCircle, Trash2, Loader } from 'lucide-react';
+import { TrendingUp, Package, Archive as Vault, DollarSign, PlusCircle, Trash2, Loader, Users, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 // import { supabase } from '@/lib/customSupabaseClient';
@@ -10,7 +10,7 @@ import SubscriptionCard from '@/components/SubscriptionCard';
 import SubscriptionModal from '@/components/SubscriptionModal';
 import { useToast } from '@/components/ui/use-toast';
 import { fetchMetalPrices, syncStripeSubscriptions } from '@/lib/api';
-import { subscriptionApi, userApi } from '@/lib/backendApi';
+import { subscriptionApi, userApi, dashboardApi } from '@/lib/backendApi';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,17 @@ const DashboardPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [metalPrices, setMetalPrices] = useState({ gold: 0, silver: 0 });
   const [userLookup, setUserLookup] = useState({});
+  const [dashboardStats, setDashboardStats] = useState({
+    totalInvested: 0,
+    monthlyInvested: 0,
+    userCount: 0,
+  });
+  const [userStats, setUserStats] = useState({
+    totalInvested: 0,
+    currentInvestment: 0,
+    accumulatedGold: 0,
+    accumulatedSilver: 0,
+  });
   
   const [showModal, setShowModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -82,11 +93,15 @@ const DashboardPage = () => {
       const subscriptionsPromise = subscriptionApi.list();
       const pricesPromise = fetchMetalPrices();
       const userListPromise = isAdmin ? userApi.listUsers() : Promise.resolve({ data: null, error: null });
+      const dashboardStatsPromise = isAdmin ? dashboardApi.getStats() : Promise.resolve({ data: null, error: null });
+      const userStatsPromise = !isAdmin ? dashboardApi.getUserStats() : Promise.resolve({ data: null, error: null });
 
-      const [{ data: subsData, error: subsError }, prices, userList] = await Promise.all([
+      const [{ data: subsData, error: subsError }, prices, userList, statsResult, userStatsResult] = await Promise.all([
         subscriptionsPromise,
         pricesPromise,
         userListPromise,
+        dashboardStatsPromise,
+        userStatsPromise,
       ]);
 
       if (subsError) throw new Error(subsError.message);
@@ -108,8 +123,31 @@ const DashboardPage = () => {
           return acc;
         }, {});
         setUserLookup(lookup);
+
+        // Set dashboard stats
+        if (statsResult?.error) {
+          console.error('Failed to fetch dashboard stats:', statsResult.error);
+        } else if (statsResult?.data) {
+          setDashboardStats({
+            totalInvested: statsResult.data.totalInvested || 0,
+            monthlyInvested: statsResult.data.monthlyInvested || 0,
+            userCount: statsResult.data.userCount || 0,
+          });
+        }
       } else {
         setUserLookup({});
+        
+        // Set user stats
+        if (userStatsResult?.error) {
+          console.error('Failed to fetch user stats:', userStatsResult.error);
+        } else if (userStatsResult?.data) {
+          setUserStats({
+            totalInvested: userStatsResult.data.totalInvested || 0,
+            currentInvestment: userStatsResult.data.currentInvestment || 0,
+            accumulatedGold: userStatsResult.data.accumulatedGold || 0,
+            accumulatedSilver: userStatsResult.data.accumulatedSilver || 0,
+          });
+        }
       }
 
     } catch (error) {
@@ -246,10 +284,35 @@ const DashboardPage = () => {
           </div>
         </motion.div>
 
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 mb-8">
-            <StatCard icon={DollarSign} label="Total Invested" value={`$${totalInvested.toFixed(2)}`} color="green" />
-            <StatCard icon={TrendingUp} label="Active Plans" value={activeSubscriptionsCount} color="amber" delay={0.1} />
-            <StatCard icon={Vault} label="Items in Vault" value={inVaultCount} color="blue" delay={0.2} />
+        <div className={`grid gap-6 mb-8 ${isAdmin ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2 xl:grid-cols-4'}`}>
+          {isAdmin ? (
+            <>
+              <StatCard icon={DollarSign} label="Total Invested" value={`$${dashboardStats.totalInvested.toFixed(2)}`} color="green" />
+              <StatCard icon={TrendingUp} label="Monthly Invested" value={`$${dashboardStats.monthlyInvested.toFixed(2)}`} color="amber" delay={0.1} />
+              <StatCard icon={Users} label="Number of Users" value={dashboardStats.userCount} color="blue" delay={0.2} />
+            </>
+          ) : (
+            <>
+              <StatCard icon={DollarSign} label="Total Invested" value={`$${userStats.totalInvested.toFixed(2)}`} color="green" />
+              <StatCard icon={TrendingUp} label="Current Investment" value={`$${userStats.currentInvestment.toFixed(2)}`} color="amber" delay={0.1} />
+              <StatCard 
+                icon={Coins} 
+                label="Accumulated Gold" 
+                value={`${userStats.accumulatedGold.toFixed(2)} g`} 
+                color="amber" 
+                delay={0.2}
+                bgTint="amber"
+              />
+              <StatCard 
+                icon={Coins} 
+                label="Accumulated Silver" 
+                value={`${userStats.accumulatedSilver.toFixed(2)} oz`} 
+                color="gray" 
+                delay={0.3}
+                bgTint="slate"
+              />
+            </>
+          )}
         </div>
 
         {/* Active Subscriptions Section */}
@@ -356,20 +419,28 @@ const DashboardPage = () => {
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay }}
-        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"
-    >
-        <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm font-medium">{label}</span>
-            <Icon className={`w-5 h-5 text-${color}-600`} />
-        </div>
-        <p className="text-3xl font-bold text-slate-900">{value}</p>
-    </motion.div>
-);
+const StatCard = ({ icon: Icon, label, value, color, delay = 0, bgTint }) => {
+    const bgClass = bgTint === 'amber' 
+        ? 'bg-gradient-to-br from-amber-50 to-white border-amber-200' 
+        : bgTint === 'slate' 
+        ? 'bg-gradient-to-br from-gray-100 to-white border-gray-300'
+        : 'bg-white border-slate-200';
+    
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay }}
+            className={`p-6 rounded-xl shadow-sm border ${bgClass}`}
+        >
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-slate-600 text-sm font-medium">{label}</span>
+                <Icon className={`w-5 h-5 text-${color}-600`} />
+            </div>
+            <p className="text-3xl font-bold text-slate-900">{value}</p>
+        </motion.div>
+    );
+};
 
 const NewPlanCard = ({ metal, price, onStart, disabled }) => {
   const isGold = metal === 'Gold';
