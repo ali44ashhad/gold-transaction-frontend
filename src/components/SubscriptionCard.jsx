@@ -350,17 +350,19 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
         <InfoRow icon={PiggyBank} label="Total Invested" value={`$${(accumulated_value || 0).toFixed(2)}`} isGold={isGold} />
         <InfoRow icon={Shield} label="Total Accumulated" value={`${formattedAccumulatedWeight}${tradeUnit}`} isGold={isGold} />
         
-        <div className="pt-2">
-            <div className="w-full bg-slate-200 rounded-full h-2.5">
-                <div 
-                    className={`h-2.5 rounded-full ${isGold ? 'bg-amber-500' : 'bg-slate-600'}`} 
-                    style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-                ></div>
-            </div>
-            <p className="text-xs text-right mt-1 text-slate-500">
-                {Math.floor(progressPercentage)}% to next accumulation
-            </p>
-        </div>
+        {status !== 'canceled' && (
+          <div className="pt-2">
+              <div className="w-full bg-slate-200 rounded-full h-2.5">
+                  <div 
+                      className={`h-2.5 rounded-full ${isGold ? 'bg-amber-500' : 'bg-slate-600'}`} 
+                      style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+                  ></div>
+              </div>
+              <p className="text-xs text-right mt-1 text-slate-500">
+                  {Math.floor(progressPercentage)}% to next accumulation
+              </p>
+          </div>
+        )}
 
         {['active', 'trialing', 'canceling'].includes(status) && current_period_end && (
           <InfoRow icon={Clock} label="Next Payment" value={formatDate(current_period_end)} isGold={isGold} />
@@ -374,66 +376,71 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
         </div>
       )}
 
-      <div className="mt-6 pt-4 border-t border-dashed border-slate-300 flex flex-col gap-3 sm:flex-row">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full sm:flex-1"
-          onClick={handleModifyClick}
-          disabled={!canModifyPlan || isSubmittingModification}
-        >
-            {isSubmittingModification ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      {/* Hide action buttons if subscription is cancelled */}
+      {status !== 'canceled' && (
+        <>
+          <div className="mt-6 pt-4 border-t border-dashed border-slate-300 flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:flex-1"
+              onClick={handleModifyClick}
+              disabled={!canModifyPlan || isSubmittingModification}
+            >
+                {isSubmittingModification ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Edit className="w-4 h-4 mr-2" />
+                )}
+                Modify
+            </Button> 
+            {hasCancellationRequest ? (
+              <Button variant="destructive" size="sm" className="w-full sm:flex-1" disabled>
+                <Clock className="w-4 h-4 mr-2" />
+                Cancel Pending
+              </Button>
             ) : (
-              <Edit className="w-4 h-4 mr-2" />
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full sm:flex-1"
+                onClick={handleCancelClick}
+                disabled={isSubmittingCancellation || !canCancel}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
             )}
-            Modify
-        </Button> 
-        {hasCancellationRequest ? (
-          <Button variant="destructive" size="sm" className="w-full sm:flex-1" disabled>
-            <Clock className="w-4 h-4 mr-2" />
-            Cancel Pending
-          </Button>
-        ) : (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="w-full sm:flex-1"
-            onClick={handleCancelClick}
-            disabled={isSubmittingCancellation || !canCancel}
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-        )}
-      </div>
+          </div>
 
-      {canWithdraw && !hasWithdrawalRequest && (
-        <div className="mt-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={handleWithdrawClick}
-            disabled={isSubmittingWithdrawal}
-          >
-            {isSubmittingWithdrawal ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <ArrowDownCircle className="w-4 h-4 mr-2" />
-            )}
-            Withdraw
-          </Button>
-        </div>
-      )}
+          {canWithdraw && !hasWithdrawalRequest && (
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleWithdrawClick}
+                disabled={isSubmittingWithdrawal}
+              >
+                {isSubmittingWithdrawal ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowDownCircle className="w-4 h-4 mr-2" />
+                )}
+                Withdraw
+              </Button>
+            </div>
+          )}
 
-      {hasWithdrawalRequest && (
-        <div className="mt-3">
-          <Button variant="outline" size="sm" className="w-full" disabled>
-            <Clock className="w-4 h-4 mr-2" />
-            Withdrawal Pending
-          </Button>
-        </div>
+          {hasWithdrawalRequest && (
+            <div className="mt-3">
+              <Button variant="outline" size="sm" className="w-full" disabled>
+                <Clock className="w-4 h-4 mr-2" />
+                Withdrawal Pending
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       <Dialog

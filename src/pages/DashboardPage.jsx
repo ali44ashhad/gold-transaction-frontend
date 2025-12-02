@@ -65,6 +65,7 @@ const DashboardPage = () => {
         stripe_customer_id: sub.stripe_customer_id || sub.stripeCustomerId,
         created_at: sub.created_at || sub.createdAt,
         updated_at: sub.updated_at || sub.updatedAt,
+        status: sub.status || sub.status, // Ensure status is preserved
         userId: sub.userId || sub.user_id, // keep camel version to avoid loss
         planName: sub.planName || sub.plan_name,
         targetWeight: sub.targetWeight ?? sub.target_weight,
@@ -187,12 +188,20 @@ const DashboardPage = () => {
   const displaySubscriptions = isAdmin ? subscriptions : subscriptions.filter(s => s.user_id === user.id);
   const pendingSubscriptionsCount = displaySubscriptions.filter(sub => sub.status === 'pending_payment').length;
   
+  // Separate active and cancelled subscriptions
+  const activeSubscriptions = displaySubscriptions.filter(sub => 
+    !['canceled', 'incomplete_expired'].includes(sub.status)
+  );
+  const cancelledSubscriptions = displaySubscriptions.filter(sub => 
+    sub.status === 'canceled'
+  );
+  
   const totalInvested = displaySubscriptions.reduce((sum, sub) => sum + (sub.accumulated_value || 0), 0);
-  const activeSubscriptionsCount = displaySubscriptions.filter(sub => ['active', 'trialing', 'canceling'].includes(sub.status)).length;
+  const activeSubscriptionsCount = activeSubscriptions.filter(sub => ['active', 'trialing', 'canceling'].includes(sub.status)).length;
   const inVaultCount = displaySubscriptions.filter(sub => sub.accumulated_weight > 0).length;
 
-  const hasActiveGold = displaySubscriptions.some(s => s.metal === 'gold' && ['active', 'trialing', 'canceling'].includes(s.status));
-  const hasActiveSilver = displaySubscriptions.some(s => s.metal === 'silver' && ['active', 'trialing', 'canceling'].includes(s.status));
+  const hasActiveGold = activeSubscriptions.some(s => s.metal === 'gold' && ['active', 'trialing', 'canceling'].includes(s.status));
+  const hasActiveSilver = activeSubscriptions.some(s => s.metal === 'silver' && ['active', 'trialing', 'canceling'].includes(s.status));
 
   return (
     <>
@@ -243,23 +252,26 @@ const DashboardPage = () => {
             <StatCard icon={Vault} label="Items in Vault" value={inVaultCount} color="blue" delay={0.2} />
         </div>
 
+        {/* Active Subscriptions Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">{isAdmin ? "All User Subscriptions" : "Your Subscriptions"}</h2>
-          {displaySubscriptions.length === 0 ? (
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">
+            {isAdmin ? "Active Subscriptions" : "Your Active Subscriptions"}
+          </h2>
+          {activeSubscriptions.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 text-center"
             >
               <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">No Subscriptions Found</h3>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">No Active Subscriptions</h3>
               <p className="text-slate-600 mb-6">
-                {isAdmin ? "There are no subscriptions in the system yet." : "Start your precious metals investment journey today!"}
+                {isAdmin ? "There are no active subscriptions in the system yet." : "Start your precious metals investment journey today!"}
               </p>
             </motion.div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {displaySubscriptions.map((subscription, index) => {
+              {activeSubscriptions.map((subscription, index) => {
                 const subscriptionUserId =
                   subscription.user_id ||
                   (typeof subscription.userId === 'string'
@@ -280,6 +292,37 @@ const DashboardPage = () => {
             </div>
           )}
         </div>
+
+        {/* Cancelled Subscriptions Section */}
+        {cancelledSubscriptions.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-600 mb-6 flex items-center gap-2">
+              <Vault className="w-6 h-6" />
+              {isAdmin ? "Cancelled Subscriptions" : "Cancelled Subscriptions"}
+            </h2>
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {cancelledSubscriptions.map((subscription, index) => {
+                const subscriptionUserId =
+                  subscription.user_id ||
+                  (typeof subscription.userId === 'string'
+                    ? subscription.userId
+                    : subscription.userId?._id);
+                return (
+                  <div key={subscription.id} className="opacity-75">
+                    <SubscriptionCard
+                      subscription={subscription}
+                      index={index}
+                      onSubscriptionUpdate={fetchDashboardData}
+                      metalPrices={metalPrices}
+                      isAdminView={isAdmin}
+                      userName={isAdmin ? userLookup[subscriptionUserId] : undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {!isAdmin && (
           <div>
