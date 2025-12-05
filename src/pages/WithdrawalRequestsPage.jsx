@@ -101,7 +101,6 @@ const WithdrawalRequestsPage = () => {
         requestIds: requests.map(r => r._id || r.id),
       });
       setRequests(requests);
-      setExpandedRows(new Set());
     } catch (error) {
       console.error('[DEBUG] Error in fetchRequests', {
         error: error.message,

@@ -90,6 +90,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   const displayPlanName = metal ? metal.charAt(0).toUpperCase() + metal.slice(1) + " Plan" : "Plan";
   const hasCancellationRequest = subscription?.cancellationRequestId;
   const hasWithdrawalRequest = subscription?.withdrawalRequestId;
+  const withdrawalRequestStatus = subscription?.withdrawalRequestStatus;
 
   // Check if withdraw button should be shown
   const canWithdraw = (() => {
@@ -347,6 +348,16 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   };
   const currentStatus = statusMap[status] || statusMap.canceled;
 
+  const getWithdrawalStatusText = (status) => {
+    const statusMap = {
+      pending: 'Withdrawal Pending',
+      approved: 'Withdrawal Approved',
+      processing: 'Processing Withdrawal',
+      out_for_delivery: 'Out for Delivery',
+    };
+    return statusMap[status] || 'Withdrawal Pending';
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -488,7 +499,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
             <div className="mt-3">
               <Button variant="outline" size="sm" className="w-full" disabled>
                 <Clock className="w-4 h-4 mr-2" />
-                Withdrawal Pending
+                {getWithdrawalStatusText(withdrawalRequestStatus)}
               </Button>
             </div>
           )}
