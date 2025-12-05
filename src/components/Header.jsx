@@ -70,6 +70,10 @@ const Header = () => {
                     <UserCircle className="mr-2 h-4 w-4" />
                     <span>Account Management</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/withdrawal-requests')}>
+                    <ArrowDownCircle className="mr-2 h-4 w-4" />
+                    <span>My Withdrawal Requests</span>
+                  </DropdownMenuItem>
                   {role === 'admin' && (
                     <>
                       <DropdownMenuItem onClick={() => navigate('/admin/users')}>

@@ -20,9 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader, RefreshCw, Edit, ArrowDownCircle, ChevronDown } from 'lucide-react';
-import DataTable from '@/components/DataTable';
-import { cn } from '@/lib/utils';
+import { Loader, RefreshCw, Edit, ArrowDownCircle } from 'lucide-react';
+import WithdrawalRequestsTable from '@/components/WithdrawalRequestsTable';
 import SearchBar from '@/components/SearchBar';
 
 const WithdrawalRequestsPage = () => {
@@ -31,7 +30,6 @@ const WithdrawalRequestsPage = () => {
   const [editingRequest, setEditingRequest] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userLookup, setUserLookup] = useState(new Map());
-  const [expandedRows, setExpandedRows] = useState(new Set());
   const [formData, setFormData] = useState({
     status: '',
   });
@@ -40,6 +38,14 @@ const WithdrawalRequestsPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [metalFilter, setMetalFilter] = useState('all');
   const { toast } = useToast();
+
+  const handleEditClick = (request) => {
+    setEditingRequest(request);
+    setFormData({
+      status: request.status || 'pending',
+    });
+    setIsDialogOpen(true);
+  };
 
   const fetchRequests = async () => {
     console.log('[DEBUG] fetchRequests called');
@@ -115,14 +121,6 @@ const WithdrawalRequestsPage = () => {
   useEffect(() => {
     fetchRequests();
   }, []);
-
-  const handleEditClick = (request) => {
-    setEditingRequest(request);
-    setFormData({
-      status: request.status || 'pending',
-    });
-    setIsDialogOpen(true);
-  };
 
   const handleUpdate = async () => {
     if (!editingRequest) {
@@ -309,131 +307,6 @@ const WithdrawalRequestsPage = () => {
     return matchesSearch && matchesStatus && matchesMetal;
   });
 
-  const columns = [
-    {
-      id: 'expander',
-      header: '',
-      cellClassName: 'w-12 align-middle',
-      cell: (request) => {
-        const rowId = normalizeId(request._id);
-        const isExpanded = expandedRows.has(rowId);
-        return (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => {
-              setExpandedRows((prev) => {
-                const next = new Set(prev);
-                if (next.has(rowId)) {
-                  next.delete(rowId);
-                } else {
-                  next.add(rowId);
-                }
-                return next;
-              });
-            }}
-          >
-            <ChevronDown
-              className={cn(
-                'w-4 h-4 transition-transform duration-200',
-                isExpanded && 'rotate-180'
-              )}
-            />
-          </Button>
-        );
-      },
-    },
-    {
-      id: 'serial',
-      header: 'S.No',
-      cellClassName: 'w-16 text-slate-500 align-middle',
-      cell: (_request, index) => index + 1,
-    },
-    {
-      id: 'user',
-      header: 'User',
-      cellClassName: 'max-w-[220px] align-middle',
-      cell: (request) => {
-        const meta = getUserMeta(request.userId);
-        return <p className="font-medium text-slate-900 truncate">{meta.name}</p>;
-      },
-    },
-    {
-      id: 'metal',
-      header: 'Metal',
-      cellClassName: 'align-middle',
-      cell: (request) => {
-        const metal = request.metal?.toLowerCase() || '';
-        const isGold = metal === 'gold';
-        return (
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              isGold
-                ? 'bg-amber-100 text-amber-800'
-                : 'bg-slate-100 text-slate-800'
-            }`}
-          >
-            {metal ? metal.charAt(0).toUpperCase() + metal.slice(1) : 'N/A'}
-          </span>
-        );
-      },
-    },
-    {
-      id: 'weight',
-      header: 'Weight',
-      cellClassName: 'align-middle',
-      cell: (request) => {
-        const weight = request.requestedWeight || 0;
-        const unit = request.requestedUnit || '';
-        return (
-          <span className="text-slate-900 font-medium">
-            {weight.toFixed(4)} {unit}
-          </span>
-        );
-      },
-    },
-    {
-      id: 'estimatedValue',
-      header: 'Est. Value',
-      cellClassName: 'align-middle',
-      cell: (request) => {
-        return (
-          <span className="text-slate-900 font-medium">
-            {formatCurrency(request.estimatedValue)}
-          </span>
-        );
-      },
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      cellClassName: 'align-middle',
-      cell: (request) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(request.status)}`}
-        >
-          {formatStatusLabel(request.status)}
-        </span>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cellClassName: 'whitespace-nowrap align-middle',
-      cell: (request) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleEditClick(request)}
-        >
-          <Edit className="w-4 h-4 mr-1" />
-          Edit
-        </Button>
-      ),
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -502,60 +375,18 @@ const WithdrawalRequestsPage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md border border-slate-200">
-          <div className="overflow-x-auto">
-            <DataTable
-              columns={columns}
-              data={filteredRequests}
-              emptyMessage={
-                searchQuery ? 'No withdrawal requests match your search.' : 'No withdrawal requests found.'
-              }
-              getRowKey={(row) => normalizeId(row._id)}
-              expandedRowKeys={expandedRows}
-              className="min-w-[1000px]"
-              renderExpandedContent={(request) => (
-              <div className="p-4">
-                <div className="grid gap-4 text-sm text-slate-600 md:grid-cols-2">
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Metal</p>
-                    <p className="capitalize break-words whitespace-normal">{request.metal || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Requested Weight</p>
-                    <p className="break-words whitespace-normal">{request.requestedWeight ? `${request.requestedWeight.toFixed(4)} ${request.requestedUnit || ''}` : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Estimated Value</p>
-                    <p className="break-words whitespace-normal">{formatCurrency(request.estimatedValue)}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Subscription</p>
-                    <p className="break-words whitespace-normal font-mono text-xs">
-                      {request.subscriptionId
-                        ? normalizeId(request.subscriptionId)
-                        : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Created At</p>
-                    <p className="break-words whitespace-normal">{formatDate(request.createdAt)}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Processed At</p>
-                    <p className="break-words whitespace-normal">{formatDate(request.processedAt)}</p>
-                  </div>
-                  {request.notes && (
-                    <div className="md:col-span-2">
-                      <p className="font-semibold text-slate-800 mb-1">Notes</p>
-                      <p className="break-words whitespace-normal">{request.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              )}
-            />
-          </div>
-        </div>
+        <WithdrawalRequestsTable
+          requests={filteredRequests}
+          onEdit={handleEditClick}
+          formatDate={formatDate}
+          formatCurrency={formatCurrency}
+          getStatusBadgeColor={getStatusBadgeColor}
+          formatStatusLabel={formatStatusLabel}
+          normalizeId={normalizeId}
+          getUserMeta={getUserMeta}
+          showUserColumn={true}
+          showActions={true}
+        />
 
         {/* Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

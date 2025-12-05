@@ -8,6 +8,7 @@ import AccountPage from '@/pages/AccountPage';
 import AdminPage from '@/pages/AdminPage';
 import CancellationRequestsPage from '@/pages/CancellationRequestsPage';
 import WithdrawalRequestsPage from '@/pages/WithdrawalRequestsPage';
+import UserWithdrawalRequestsPage from '@/pages/UserWithdrawalRequestsPage';
 import UserManagementPage from '@/pages/UserManagementPage';
 import PaymentsPage from '@/pages/PaymentsPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
@@ -80,6 +81,10 @@ function App() {
             <Route
               path="/payments"
               element={<PrivateRoute><PaymentsPage /></PrivateRoute>}
+            />
+            <Route
+              path="/withdrawal-requests"
+              element={<PrivateRoute><UserWithdrawalRequestsPage /></PrivateRoute>}
             />
             <Route
               path="/help"
