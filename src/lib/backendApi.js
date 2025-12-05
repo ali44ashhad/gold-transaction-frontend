@@ -12,11 +12,40 @@ const apiRequest = async (endpoint, options = {}) => {
     },
   };
 
+  // Debug log for withdrawal-related requests
+  const isWithdrawalRequest = endpoint.includes('withdrawal-requests');
+  if (isWithdrawalRequest) {
+    console.log('[DEBUG] apiRequest - Making request', {
+      url,
+      method: options.method || 'GET',
+      endpoint,
+      hasBody: !!options.body,
+      bodyPreview: options.body ? (options.body.length > 200 ? options.body.substring(0, 200) + '...' : options.body) : null,
+    });
+  }
+
   try {
     const response = await fetch(url, config);
     const data = await response.json();
 
+    if (isWithdrawalRequest) {
+      console.log('[DEBUG] apiRequest - Response received', {
+        url,
+        status: response.status,
+        ok: response.ok,
+        data,
+      });
+    }
+
     if (!response.ok) {
+      if (isWithdrawalRequest) {
+        console.error('[DEBUG] apiRequest - Request failed', {
+          url,
+          status: response.status,
+          error: data.error,
+          details: data.details,
+        });
+      }
       return {
         error: {
           message: data.error || 'An error occurred',
@@ -28,6 +57,13 @@ const apiRequest = async (endpoint, options = {}) => {
 
     return { data, error: null };
   } catch (error) {
+    if (isWithdrawalRequest) {
+      console.error('[DEBUG] apiRequest - Network/parsing error', {
+        url,
+        error: error.message,
+        stack: error.stack,
+      });
+    }
     return { error: { message: error.message || 'Network error' }, data: null };
   }
 };
@@ -260,41 +296,61 @@ export const cancellationRequestApi = {
 
 export const withdrawalRequestApi = {
   list: async (params = {}) => {
+    console.log('[DEBUG] withdrawalRequestApi.list called', { params });
     const query = buildQueryString(params);
-    return apiRequest(`/withdrawal-requests${query}`, {
+    const url = `/withdrawal-requests${query}`;
+    console.log('[DEBUG] Calling withdrawal API', { url, method: 'GET' });
+    const result = await apiRequest(url, {
       method: 'GET',
     });
+    console.log('[DEBUG] withdrawalRequestApi.list response', { result });
+    return result;
   },
   create: async (payload) => {
-    return apiRequest('/withdrawal-requests', {
+    console.log('[DEBUG] withdrawalRequestApi.create called', { payload });
+    const result = await apiRequest('/withdrawal-requests', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    console.log('[DEBUG] withdrawalRequestApi.create response', { result });
+    return result;
   },
   getById: async (requestId) => {
     if (!requestId) {
+      console.error('[DEBUG] withdrawalRequestApi.getById - requestId is required');
       throw new Error('requestId is required');
     }
-    return apiRequest(`/withdrawal-requests/${requestId}`, {
+    console.log('[DEBUG] withdrawalRequestApi.getById called', { requestId });
+    const result = await apiRequest(`/withdrawal-requests/${requestId}`, {
       method: 'GET',
     });
+    console.log('[DEBUG] withdrawalRequestApi.getById response', { result });
+    return result;
   },
   update: async (requestId, payload) => {
     if (!requestId) {
+      console.error('[DEBUG] withdrawalRequestApi.update - requestId is required');
       throw new Error('requestId is required');
     }
-    return apiRequest(`/withdrawal-requests/${requestId}`, {
+    console.log('[DEBUG] withdrawalRequestApi.update called', { requestId, payload });
+    const result = await apiRequest(`/withdrawal-requests/${requestId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
+    console.log('[DEBUG] withdrawalRequestApi.update response', { result });
+    return result;
   },
   remove: async (requestId) => {
     if (!requestId) {
+      console.error('[DEBUG] withdrawalRequestApi.remove - requestId is required');
       throw new Error('requestId is required');
     }
-    return apiRequest(`/withdrawal-requests/${requestId}`, {
+    console.log('[DEBUG] withdrawalRequestApi.remove called', { requestId });
+    const result = await apiRequest(`/withdrawal-requests/${requestId}`, {
       method: 'DELETE',
     });
+    console.log('[DEBUG] withdrawalRequestApi.remove response', { result });
+    return result;
   },
 };
 

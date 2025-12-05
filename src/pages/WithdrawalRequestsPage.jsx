@@ -42,18 +42,33 @@ const WithdrawalRequestsPage = () => {
   const { toast } = useToast();
 
   const fetchRequests = async () => {
+    console.log('[DEBUG] fetchRequests called');
     setLoading(true);
     try {
+      console.log('[DEBUG] Fetching withdrawal requests and users');
       const [requestResponse, usersResponse] = await Promise.all([
         withdrawalRequestApi.list(),
         userApi.listUsers(),
       ]);
 
+      console.log('[DEBUG] Fetch responses received', {
+        requestsCount: requestResponse.data?.requests?.length || 0,
+        usersCount: usersResponse.data?.users?.length || 0,
+        requestError: requestResponse.error,
+        usersError: usersResponse.error,
+      });
+
       if (requestResponse.error) {
+        console.error('[DEBUG] Error fetching withdrawal requests', {
+          error: requestResponse.error,
+        });
         throw new Error(requestResponse.error.message || 'Failed to fetch withdrawal requests');
       }
 
       if (usersResponse.error) {
+        console.warn('[DEBUG] Error fetching users, using fallback', {
+          error: usersResponse.error,
+        });
         toast({
           title: 'User data unavailable',
           description: usersResponse.error.message || 'Showing fallback user identifiers.',
@@ -69,11 +84,23 @@ const WithdrawalRequestsPage = () => {
           }
         });
         setUserLookup(lookup);
+        console.log('[DEBUG] User lookup map created', {
+          userCount: lookup.size,
+        });
       }
 
-      setRequests(requestResponse.data?.requests || []);
+      const requests = requestResponse.data?.requests || [];
+      console.log('[DEBUG] Setting withdrawal requests', {
+        count: requests.length,
+        requestIds: requests.map(r => r._id || r.id),
+      });
+      setRequests(requests);
       setExpandedRows(new Set());
     } catch (error) {
+      console.error('[DEBUG] Error in fetchRequests', {
+        error: error.message,
+        stack: error.stack,
+      });
       toast({
         title: 'Error fetching withdrawal requests',
         description: error.message,
@@ -81,6 +108,7 @@ const WithdrawalRequestsPage = () => {
       });
     } finally {
       setLoading(false);
+      console.log('[DEBUG] fetchRequests completed');
     }
   };
 
@@ -97,18 +125,55 @@ const WithdrawalRequestsPage = () => {
   };
 
   const handleUpdate = async () => {
-    if (!editingRequest) return;
+    if (!editingRequest) {
+      console.warn('[DEBUG] handleUpdate called but editingRequest is null');
+      return;
+    }
+
+    console.log('[DEBUG] Updating withdrawal request', {
+      requestId: editingRequest._id,
+      currentStatus: editingRequest.status,
+      newStatus: formData.status,
+      previousStatus: editingRequest.status,
+      isStatusChange: formData.status !== editingRequest.status,
+    });
 
     setUpdating(true);
     try {
+      const updatePayload = {
+        ...formData,
+      };
+
+      console.log('[DEBUG] Calling withdrawalRequestApi.update', {
+        requestId: editingRequest._id,
+        payload: updatePayload,
+      });
+
       const { data, error } = await withdrawalRequestApi.update(
         editingRequest._id,
-        formData
+        updatePayload
       );
 
+      console.log('[DEBUG] withdrawalRequestApi.update response', {
+        requestId: editingRequest._id,
+        data,
+        error,
+      });
+
       if (error) {
+        console.error('[DEBUG] withdrawalRequestApi.update returned error', {
+          requestId: editingRequest._id,
+          error,
+        });
         throw new Error(error.message || 'Failed to update withdrawal request');
       }
+
+      console.log('[DEBUG] Withdrawal request updated successfully', {
+        requestId: editingRequest._id,
+        oldStatus: editingRequest.status,
+        newStatus: data?.request?.status,
+        requestData: data?.request,
+      });
 
       // Update the request in the list
       setRequests(requests.map(req => 
@@ -124,6 +189,11 @@ const WithdrawalRequestsPage = () => {
       setIsDialogOpen(false);
       setEditingRequest(null);
     } catch (error) {
+      console.error('[DEBUG] Error updating withdrawal request', {
+        requestId: editingRequest._id,
+        error: error.message,
+        stack: error.stack,
+      });
       toast({
         title: 'Update failed',
         description: error.message,
@@ -131,6 +201,7 @@ const WithdrawalRequestsPage = () => {
       });
     } finally {
       setUpdating(false);
+      console.log('[DEBUG] handleUpdate completed');
     }
   };
 
