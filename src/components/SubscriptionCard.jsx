@@ -393,7 +393,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
 
       <div className="mt-6 space-y-4 text-sm flex-grow">
         <InfoRow icon={Target} label="Targeted Weight" value={`${formattedTargetWeight}${tradeUnit}`} isGold={isGold} />
-        <InfoRow icon={Gem} label="Current Value" value={`$${currentValue.toFixed(2)}`} isGold={isGold} />
+        {/* <InfoRow icon={Gem} label="Current Value" value={`$${currentValue.toFixed(2)}`} isGold={isGold} /> */}
         <InfoRow icon={PiggyBank} label="Total Invested" value={`$${(accumulated_value || 0).toFixed(2)}`} isGold={isGold} />
         <InfoRow icon={Shield} label="Total Accumulated" value={`${formattedAccumulatedWeight}${tradeUnit}`} isGold={isGold} />
         
