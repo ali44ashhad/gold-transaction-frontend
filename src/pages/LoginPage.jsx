@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogIn, Sparkles, AlertTriangle, Send } from 'lucide-react';
+import { LogIn, Sparkles, AlertTriangle, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -19,14 +20,27 @@ import {
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const { signIn, session, sendPasswordResetEmail } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Show success message if coming from signup
+  useEffect(() => {
+    if (location.state?.message) {
+      toast({
+        title: "Account Created! 🎉",
+        description: location.state.message,
+      });
+      // Clear the state to prevent showing the message again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, toast]);
 
   useEffect(() => {
     if (session) {

@@ -105,11 +105,13 @@ const SignUpPage = () => {
         }
         // The useAuth hook handles the general error toast
     } else {
-      toast({
-        title: 'Account Created! 🎉',
-        description: "We've sent a confirmation link to your email.",
+      // Redirect to login page after successful signup
+      navigate('/login', { 
+        state: { 
+          message: 'Account created successfully! Please login to continue.',
+          email: formData.email 
+        } 
       });
-      navigate('/');
     }
   };
 

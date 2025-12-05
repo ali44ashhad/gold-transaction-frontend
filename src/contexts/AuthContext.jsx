@@ -79,25 +79,12 @@ export const AuthProvider = ({ children }) => {
         return { data: null, error };
       }
 
-      // Transform and set user
-      if (data?.user) {
-        const transformedUser = {
-          id: data.user.id || data.user._id,
-          _id: data.user.id || data.user._id,
-          email: data.user.email,
-          user_metadata: {
-            first_name: data.user.firstName,
-            last_name: data.user.lastName,
-            phone: data.user.phone,
-            billing_address: data.user.billingAddress,
-            shipping_address: data.user.shippingAddress,
-          },
-          emailVerified: data.user.emailVerified,
-        };
-        setUser(transformedUser);
-        setSession({ user: transformedUser });
-        setRole(data.user.role || 'user');
-      }
+      // DO NOT set user state - user must login separately
+      // Just show success message
+      toast({
+        title: "Account Created! 🎉",
+        description: "Please login to continue.",
+      });
 
       return { data, error: null };
     } catch (error) {
