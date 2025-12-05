@@ -20,9 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader, RefreshCw, Edit, XCircle, ChevronDown } from 'lucide-react';
-import DataTable from '@/components/DataTable';
-import { cn } from '@/lib/utils';
+import { Loader, RefreshCw, Edit, XCircle } from 'lucide-react';
+import CancellationRequestsTable from '@/components/CancellationRequestsTable';
 import SearchBar from '@/components/SearchBar';
 
 const CancellationRequestsPage = () => {
@@ -31,7 +30,6 @@ const CancellationRequestsPage = () => {
   const [editingRequest, setEditingRequest] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userLookup, setUserLookup] = useState(new Map());
-  const [expandedRows, setExpandedRows] = useState(new Set());
   const [formData, setFormData] = useState({
     status: '',
     resolutionNotes: '',
@@ -72,7 +70,6 @@ const CancellationRequestsPage = () => {
       }
 
       setRequests(requestResponse.data?.requests || []);
-      setExpandedRows(new Set());
     } catch (error) {
       toast({
         title: 'Error fetching cancellation requests',
@@ -222,91 +219,6 @@ const CancellationRequestsPage = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const columns = [
-    {
-      id: 'expander',
-      header: '',
-      cellClassName: 'w-12 align-middle',
-      cell: (request) => {
-        const rowId = normalizeId(request._id);
-        const isExpanded = expandedRows.has(rowId);
-        return (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => {
-              setExpandedRows((prev) => {
-                const next = new Set(prev);
-                if (next.has(rowId)) {
-                  next.delete(rowId);
-                } else {
-                  next.add(rowId);
-                }
-                return next;
-              });
-            }}
-          >
-            <ChevronDown
-              className={cn(
-                'w-4 h-4 transition-transform duration-200',
-                isExpanded && 'rotate-180'
-              )}
-            />
-          </Button>
-        );
-      },
-    },
-    {
-      id: 'serial',
-      header: 'S.No',
-      cellClassName: 'w-16 text-slate-500 align-middle',
-      cell: (_request, index) => index + 1,
-    },
-    {
-      id: 'user',
-      header: 'User',
-      cellClassName: 'max-w-[220px] align-middle',
-      cell: (request) => {
-        const meta = getUserMeta(request.userId);
-        return <p className="font-medium text-slate-900 truncate">{meta.name}</p>;
-      },
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      cellClassName: 'align-middle',
-      cell: (request) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(request.status)}`}
-        >
-          {formatStatusLabel(request.status)}
-        </span>
-      ),
-    },
-    {
-      id: 'preferredDate',
-      header: 'Preferred Date',
-      cellClassName: 'align-middle',
-      cell: (request) => formatDate(request.preferredCancellationDate),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cellClassName: 'whitespace-nowrap align-middle',
-      cell: (request) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleEditClick(request)}
-        >
-          <Edit className="w-4 h-4 mr-1" />
-          Edit
-        </Button>
-      ),
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -361,50 +273,17 @@ const CancellationRequestsPage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md border border-slate-200">
-          <div className="overflow-x-auto">
-            <DataTable
-              columns={columns}
-              data={filteredRequests}
-              emptyMessage={
-                searchQuery ? 'No cancellation requests match your search.' : 'No cancellation requests found.'
-              }
-              getRowKey={(row) => normalizeId(row._id)}
-              expandedRowKeys={expandedRows}
-              className="min-w-[720px]"
-              renderExpandedContent={(request) => (
-              <div className="p-4">
-                <div className="grid gap-4 text-sm text-slate-600 md:grid-cols-2">
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Reason</p>
-                    <p className="break-words whitespace-normal">{request.reason || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Details</p>
-                    <p className="break-words whitespace-normal">{request.details || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Subscription</p>
-                    <p className="break-words whitespace-normal font-mono text-xs">
-                      {request.subscriptionId
-                        ? normalizeId(request.subscriptionId)
-                        : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 mb-1">Created At</p>
-                    <p className="break-words whitespace-normal">{formatDate(request.createdAt)}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="font-semibold text-slate-800 mb-1">Resolution Notes</p>
-                    <p className="break-words whitespace-normal">{request.resolutionNotes || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-              )}
-            />
-          </div>
-        </div>
+        <CancellationRequestsTable
+          requests={filteredRequests}
+          onEdit={handleEditClick}
+          formatDate={formatDate}
+          getStatusBadgeColor={getStatusBadgeColor}
+          formatStatusLabel={formatStatusLabel}
+          normalizeId={normalizeId}
+          getUserMeta={getUserMeta}
+          showUserColumn={true}
+          showActions={true}
+        />
 
         {/* Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
