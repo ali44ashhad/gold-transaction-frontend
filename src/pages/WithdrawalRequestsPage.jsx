@@ -230,10 +230,10 @@ const WithdrawalRequestsPage = () => {
     const colors = {
       rejected: 'bg-red-500 text-white',
       pending: 'bg-yellow-500 text-white',
-      in_review: 'bg-blue-500 text-white',
       approved: 'bg-teal-500 text-white',
-      completed: 'bg-green-500 text-white',
-      processing: 'bg-purple-500 text-white', // Keeping purple for processing status
+      processing: 'bg-purple-500 text-white',
+      out_for_delivery: 'bg-orange-500 text-white',
+      delivered: 'bg-green-500 text-white',
     };
     return colors[status] || 'bg-gray-500 text-white';
   };
@@ -361,11 +361,11 @@ const WithdrawalRequestsPage = () => {
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_review">In Review</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={fetchRequests} variant="outline" className="w-full sm:w-auto">
@@ -409,11 +409,11 @@ const WithdrawalRequestsPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in_review">In Review</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

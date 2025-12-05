@@ -151,9 +151,7 @@ const CancellationRequestsPage = () => {
     const colors = {
       rejected: 'bg-red-500 text-white',
       pending: 'bg-yellow-500 text-white',
-      in_review: 'bg-blue-500 text-white',
       approved: 'bg-teal-500 text-white',
-      completed: 'bg-green-500 text-white',
     };
     return colors[status] || 'bg-gray-500 text-white';
   };
@@ -260,10 +258,8 @@ const CancellationRequestsPage = () => {
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_review">In Review</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={fetchRequests} variant="outline" className="w-full sm:w-auto">
@@ -306,10 +302,8 @@ const CancellationRequestsPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in_review">In Review</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
