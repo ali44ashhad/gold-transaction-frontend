@@ -308,7 +308,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
   };
 
   const totalMonthlyCharge = (monthly_investment || 0) * (quantity || 1);
-  const progressPercentage = currentTargetPrice > 0 ? (accumulated_value / currentTargetPrice) * 100 : 0;
+  const progressPercentage = normalizedTargetWeight > 0 ? (normalizedAccumulatedWeight / normalizedTargetWeight) * 100 : 0;
 
   const currentValue = normalizedAccumulatedWeight * Math.max(pricePerTradeUnit, 0);
   const formattedTargetWeight =
@@ -361,7 +361,7 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
                   ></div>
               </div>
               <p className="text-xs text-right mt-1 text-slate-500">
-                  {Math.floor(progressPercentage)}% to next accumulation
+                  {Math.floor(progressPercentage)}% of target weight accumulated
               </p>
           </div>
         )}

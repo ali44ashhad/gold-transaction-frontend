@@ -13,6 +13,7 @@ import PaymentsPage from '@/pages/PaymentsPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import CheckoutSuccessPage from '@/pages/CheckoutSuccessPage';
 import CheckoutCancelPage from '@/pages/CheckoutCancelPage';
+import HelpPage from '@/pages/HelpPage';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatePresence } from 'framer-motion';
@@ -79,6 +80,10 @@ function App() {
             <Route
               path="/payments"
               element={<PrivateRoute><PaymentsPage /></PrivateRoute>}
+            />
+            <Route
+              path="/help"
+              element={<PrivateRoute><HelpPage /></PrivateRoute>}
             />
           </Routes>
         </AnimatePresence>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, LogOut, LayoutDashboard, UserCircle, XCircle, Users, ArrowDownCircle } from 'lucide-react';
+import { Sparkles, LogOut, LayoutDashboard, UserCircle, XCircle, Users, ArrowDownCircle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
@@ -86,6 +86,11 @@ const Header = () => {
                       </DropdownMenuItem>
                     </>
                   )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/help')}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>Need help</span>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />

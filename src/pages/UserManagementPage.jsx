@@ -131,6 +131,11 @@ const UserManagementPage = () => {
         next.set(normalizedId, subscriptions);
         return next;
       });
+
+      // Automatically fetch payments for all subscriptions
+      subscriptions.forEach((subscription) => {
+        fetchSubscriptionPayments(subscription);
+      });
     } catch (error) {
       toast({
         title: 'Error fetching subscriptions',
@@ -883,15 +888,15 @@ const UserManagementPage = () => {
                                     </div>
                                     {payment.receiptUrl && (
                                       <div className="md:col-span-2">
-                                        <a
-                                          href={payment.receiptUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs"
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => window.open(payment.receiptUrl, '_blank', 'noopener,noreferrer')}
+                                          className="flex items-center gap-1 text-xs"
                                         >
                                           View Receipt
                                           <ExternalLink className="w-3 h-3" />
-                                        </a>
+                                        </Button>
                                       </div>
                                     )}
                                   </div>
