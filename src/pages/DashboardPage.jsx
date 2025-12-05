@@ -47,6 +47,8 @@ const DashboardPage = () => {
     currentInvestment: 0,
     accumulatedGold: 0,
     accumulatedSilver: 0,
+    withdrawnGold: 0,
+    withdrawnSilver: 0,
   });
   
   const [showModal, setShowModal] = useState(false);
@@ -164,6 +166,8 @@ const DashboardPage = () => {
             currentInvestment: userStatsResult.data.currentInvestment || 0,
             accumulatedGold: userStatsResult.data.accumulatedGold || 0,
             accumulatedSilver: userStatsResult.data.accumulatedSilver || 0,
+            withdrawnGold: userStatsResult.data.withdrawnGold || 0,
+            withdrawnSilver: userStatsResult.data.withdrawnSilver || 0,
           });
         }
       }
@@ -510,7 +514,7 @@ const DashboardPage = () => {
           </div>
         </motion.div>
 
-        <div className={`grid gap-6 mb-8 ${isAdmin ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2 xl:grid-cols-4'}`}>
+        <div className={`grid gap-6 mb-8 ${isAdmin ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2 xl:grid-cols-3'}`}>
           {isAdmin ? (
             <>
               <StatCard icon={DollarSign} label="Total Invested" value={`$${dashboardStats.totalInvested.toFixed(2)}`} color="green" />
@@ -535,6 +539,22 @@ const DashboardPage = () => {
                 value={`${userStats.accumulatedSilver.toFixed(2)} oz`} 
                 color="gray" 
                 delay={0.3}
+                bgTint="slate"
+              />
+              <StatCard 
+                icon={Vault} 
+                label="Withdrawn Gold" 
+                value={`${userStats.withdrawnGold.toFixed(2)} g`} 
+                color="amber" 
+                delay={0.4}
+                bgTint="amber"
+              />
+              <StatCard 
+                icon={Vault} 
+                label="Withdrawn Silver" 
+                value={`${userStats.withdrawnSilver.toFixed(2)} oz`} 
+                color="gray" 
+                delay={0.5}
                 bgTint="slate"
               />
             </>
