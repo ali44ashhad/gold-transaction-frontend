@@ -97,18 +97,19 @@ const SubscriptionCard = ({ subscription, index, onSubscriptionUpdate, metalPric
     if (hasCancellationRequest) return false;
     if (!['active', 'trialing'].includes(status)) return false;
     
+    // Convert to standard units for comparison
     if (isGold) {
-      // Gold: accumulated >= 1g OR >= target weight
+      // Gold: accumulated >= 1g AND accumulated < target weight
       const minGoldGrams = 1;
       const accumulatedGrams = convertWeight(normalizedAccumulatedWeight, tradeUnit, 'g');
       const targetGrams = convertWeight(normalizedTargetWeight, tradeUnit, 'g');
-      return accumulatedGrams >= minGoldGrams || accumulatedGrams >= targetGrams;
+      return accumulatedGrams >= minGoldGrams && accumulatedGrams < targetGrams;
     } else {
-      // Silver: accumulated >= 3.5 oz OR >= target weight
+      // Silver: accumulated >= 3.5 oz AND accumulated < target weight
       const minSilverOz = 3.5;
       const accumulatedOz = convertWeight(normalizedAccumulatedWeight, tradeUnit, 'oz');
       const targetOz = convertWeight(normalizedTargetWeight, tradeUnit, 'oz');
-      return accumulatedOz >= minSilverOz || accumulatedOz >= targetOz;
+      return accumulatedOz >= minSilverOz && accumulatedOz < targetOz;
     }
   })();
 
