@@ -8,7 +8,7 @@ import SubscriptionModal from '@/components/SubscriptionModal';
 import { fetchMetalPrices, triggerPriceUpdate } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
+import goldImage from '../../public/gold_hero.jpeg';
 const plans = [
     { name: 'Gold Plan', metal: 'gold' },
     { name: 'Silver Plan', metal: 'silver' }
@@ -174,7 +174,7 @@ const HomePage = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="relative"
               >
-                <img className="rounded-2xl shadow-2xl w-full h-auto" alt="Professional financial setting with gold and silver assets, symbolizing wealth management and secure investment opportunities" src="https://images.unsplash.com/photo-1624365169364-0640dd10e180" />
+                <img className="rounded-2xl shadow-2xl w-full h-auto" alt="Professional financial setting with gold and silver assets, symbolizing wealth management and secure investment opportunities" src={goldImage} />
               </motion.div>
             </div>
           </div>
