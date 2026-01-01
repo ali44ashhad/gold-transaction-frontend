@@ -181,13 +181,13 @@ const HomePage = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 bg-white">
+        <section className="py-12 md:py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="text-center mb-8 md:mb-16"
             >
               <h2 className="text-4xl font-bold text-slate-900 mb-4">Why Choose PharaohVault?</h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">
