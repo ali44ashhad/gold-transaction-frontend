@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Helper function to make API requests with credentials
 const apiRequest = async (endpoint, options = {}) => {
