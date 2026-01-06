@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite --host :: --port 3000",
-    "build": "vite build",
+    "dev": "node init && vite --host :: --port 3000",
+    "build": "node init && vite build",
     "preview": "vite preview --host :: --port 3000"
   },
   "dependencies": {
